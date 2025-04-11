@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider } from '@project-serum/anchor';
@@ -15,15 +15,33 @@ import {
 } from '../utils/useprogram';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { BN } from '@project-serum/anchor';
+
+interface IcoState {
+    authority: PublicKey;
+    tokenMint: PublicKey;
+    vault: PublicKey;
+    tokenPrice: BN;
+    totalContributed: BN;
+}
 
 const ICO = () => {
     const [mintInput, setMintInput] = useState('');
     const [contributionAmount, setContributionAmount] = useState('');
     const { publicKey, wallet, connected, signTransaction, signAllTransactions } = useWallet();
     const [loading, setLoading] = useState(false);
-    const [icoState, setIcoState] = useState<any>(null);
+    const [icoState, setIcoState] = useState<IcoState | null>(null);
 
     const { connection } = useConnection();
+
+    const provider = useMemo(() => {
+        if (!wallet || !publicKey || !signTransaction || !signAllTransactions) return null;
+        return new AnchorProvider(
+            connection,
+            { publicKey, signTransaction, signAllTransactions },
+            { commitment: 'processed' }
+        );
+    }, [wallet, publicKey, signTransaction, signAllTransactions, connection]);
 
     const truncateAddress = (address: string) => {
         if (!address) return '';
@@ -43,28 +61,19 @@ const ICO = () => {
         return getIcoStatePDA(IcoInfo);
     }, [IcoInfo]);
 
-    const fetchIcoState = async () => {
+    const fetchIcoState = useCallback(async () => {
         if (!provider || !IcoInfo || !icoStatePDA) return;
     
         try {
             const program = getProgram(provider);
-            const data = await program.account.icoState.fetch(icoStatePDA);
+            const data = await program.account.icoState.fetch(icoStatePDA) as IcoState;
             setIcoState(data);
         } catch (err) {
             console.log('Error fetching ICO state:', err);
             toast.error('ICO not initialized yet');
             setIcoState(null);
         }
-    };
-
-    const provider = useMemo(() => {
-        if (!wallet || !publicKey || !signTransaction || !signAllTransactions) return null;
-        return new AnchorProvider(
-            connection,
-            { publicKey, signTransaction, signAllTransactions },
-            { commitment: 'processed' }
-        );
-    }, [wallet, publicKey, signTransaction, signAllTransactions, connection]);
+    }, [provider, IcoInfo, icoStatePDA]);
 
     const handleInitializeICO = async () => {
         if (!provider) throw new WalletNotConnectedError();
@@ -139,7 +148,7 @@ const ICO = () => {
         if (IcoInfo && provider) {
             fetchIcoState();
         }
-    }, [IcoInfo, provider]);
+    }, [IcoInfo, provider, fetchIcoState]);
 
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-6">
