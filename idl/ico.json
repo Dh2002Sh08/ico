@@ -1,0 +1,434 @@
+{
+    "version": "0.1.0",
+    "name": "ico",
+    "instructions": [
+        {
+            "name": "initializeIco",
+            "accounts": [
+                {
+                    "name": "icoState",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenMint",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "signer",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "rent",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "presaleAmount",
+                    "type": "u64"
+                },
+                {
+                    "name": "pricePerToken",
+                    "type": "u64"
+                },
+                {
+                    "name": "startTime",
+                    "type": "i64"
+                },
+                {
+                    "name": "endTime",
+                    "type": "i64"
+                }
+            ]
+        },
+        {
+            "name": "contributeToIco",
+            "accounts": [
+                {
+                    "name": "icoState",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenMint",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "user",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "icoAuthorityWallet",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultTokenAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "userTokenAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "lamportsContributed",
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "contribute",
+            "accounts": [
+                {
+                    "name": "icoState",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "userContribution",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "user",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "tokenMint",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "icoAuthorityWallet",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": [
+                {
+                    "name": "lamports",
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "claimTokens",
+            "accounts": [
+                {
+                    "name": "icoState",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenMint",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "userContribution",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "user",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "userTokenAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "icoAuthorityWallet",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "vaultTokenAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "emergencyStop",
+            "accounts": [
+                {
+                    "name": "icoState",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "tokenMint",
+                    "isMut": false,
+                    "isSigner": false
+                },
+                {
+                    "name": "authority",
+                    "isMut": false,
+                    "isSigner": true
+                }
+            ],
+            "args": []
+        }
+    ],
+    "accounts": [
+        {
+            "name": "IcoState",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "authority",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "tokenMint",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "presaleAmount",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "pricePerToken",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "tokenSold",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "isActive",
+                        "type": "bool"
+                    },
+                    {
+                        "name": "startTime",
+                        "type": "i64"
+                    },
+                    {
+                        "name": "endTime",
+                        "type": "i64"
+                    },
+                    {
+                        "name": "bump",
+                        "type": "u8"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "UserContribution",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "amount",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "claimed",
+                        "type": "bool"
+                    }
+                ]
+            }
+        }
+    ],
+    "events": [
+        {
+            "name": "IcoInitialized",
+            "fields": [
+                {
+                    "name": "authority",
+                    "type": "publicKey",
+                    "index": false
+                },
+                {
+                    "name": "tokenMint",
+                    "type": "publicKey",
+                    "index": false
+                },
+                {
+                    "name": "presaleAmount",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "pricePerToken",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "startTime",
+                    "type": "i64",
+                    "index": false
+                },
+                {
+                    "name": "endTime",
+                    "type": "i64",
+                    "index": false
+                }
+            ]
+        },
+        {
+            "name": "TokensPurchased",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "publicKey",
+                    "index": false
+                },
+                {
+                    "name": "lamports",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "tokens",
+                    "type": "u64",
+                    "index": false
+                }
+            ]
+        },
+        {
+            "name": "ContributionRecorded",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "publicKey",
+                    "index": false
+                },
+                {
+                    "name": "lamports",
+                    "type": "u64",
+                    "index": false
+                },
+                {
+                    "name": "tokens",
+                    "type": "u64",
+                    "index": false
+                }
+            ]
+        },
+        {
+            "name": "TokensClaimed",
+            "fields": [
+                {
+                    "name": "user",
+                    "type": "publicKey",
+                    "index": false
+                },
+                {
+                    "name": "amount",
+                    "type": "u64",
+                    "index": false
+                }
+            ]
+        },
+        {
+            "name": "IcoStopped",
+            "fields": [
+                {
+                    "name": "timestamp",
+                    "type": "i64",
+                    "index": false
+                }
+            ]
+        }
+    ],
+    "errors": [
+        {
+            "code": 6000,
+            "name": "MathOverflow",
+            "msg": "Calculation error"
+        },
+        {
+            "code": 6001,
+            "name": "PresaleLimitExceeded",
+            "msg": "Presale limit reached"
+        },
+        {
+            "code": 6002,
+            "name": "NothingToClaim",
+            "msg": "Nothing to claim"
+        },
+        {
+            "code": 6003,
+            "name": "AlreadyClaimed",
+            "msg": "Tokens already claimed"
+        },
+        {
+            "code": 6004,
+            "name": "IcoNotActive",
+            "msg": "ICO is not active"
+        },
+        {
+            "code": 6005,
+            "name": "IcoNotStarted",
+            "msg": "ICO has not started"
+        },
+        {
+            "code": 6006,
+            "name": "IcoEnded",
+            "msg": "ICO has ended"
+        },
+        {
+            "code": 6007,
+            "name": "Unauthorized",
+            "msg": "Unauthorized access"
+        },
+        {
+            "code": 6008,
+            "name": "InvalidTimeRange",
+            "msg": "Invalid time range"
+        },
+        {
+            "code": 6009,
+            "name": "InvalidStartTime",
+            "msg": "Invalid start time"
+        },
+        {
+            "code": 6010,
+            "name": "InsufficientFunds",
+            "msg": "Insufficient Funds"
+        }
+    ]
+}
