@@ -1,5 +1,6 @@
 import { Worker } from 'worker_threads';
 import os from 'os';
+import { join } from 'path';
 
 export default async function handler(req, res) {
     const { prefix, endpoint = 'https://api.devnet.solana.com', numWorkers = os.cpus().length } = req.query;
@@ -31,9 +32,9 @@ async function generateVanityMintSigner(targetPrefix, endpoint, numWorkers) {
         console.log(`Starting parallel search for vanity token mint with prefix "${targetPrefix}" using ${numWorkers} workers...`);
 
         for (let i = 0; i < numWorkers; i++) {
-            const worker = new Worker('./utils/vanityWorker.js', {
-                workerData: { endpoint, targetPrefix } // Pass data directly
-            });
+            const worker = new Worker(join(process.cwd(), 'workers', 'vanityworker.js'), {
+                workerData: { endpoint, targetPrefix },
+              });
             workers.push(worker);
 
             worker.on('message', (mintData) => {
