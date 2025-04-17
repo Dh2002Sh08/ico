@@ -1,6 +1,6 @@
-import { parentPort, workerData } from 'worker_threads';
-import { generateSigner } from '@metaplex-foundation/umi';
-import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+const { parentPort, workerData } = require('worker_threads');
+const { createUmi } = require('@metaplex-foundation/umi-bundle-defaults');
+const { generateSigner } = require('@metaplex-foundation/umi');
 
 const { endpoint, targetPrefix } = workerData; // Receive from index.js
 const umi = createUmi(endpoint);

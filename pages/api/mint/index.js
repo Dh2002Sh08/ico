@@ -2,6 +2,7 @@ import { Worker } from 'worker_threads';
 import os from 'os';
 import { join } from 'path';
 
+
 export default async function handler(req, res) {
     const { prefix, endpoint = 'https://api.devnet.solana.com', numWorkers = os.cpus().length } = req.query;
 
