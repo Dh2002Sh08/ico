@@ -271,6 +271,16 @@ export const IDL: Idl = {
             "code": 6010,
             "name": "MathOverflow",
             "msg": "Mathematics logic fails"
+        },
+        {
+            "code": 6011,
+            "name": "InvalidContributionTime",
+            "msg": "Contributions are only allowed during the ICO period."
+        },
+        {
+            "code": 6012,
+            "name": "IcoNotEndedYet",
+            "msg": "Wait for ICO to be ended"
         }
     ]
 }

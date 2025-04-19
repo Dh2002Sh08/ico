@@ -6,7 +6,6 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { AnchorProvider } from '@project-serum/anchor';
 import { WalletNotConnectedError } from '@solana/wallet-adapter-base';
 import { PublicKey } from '@solana/web3.js';
-import { format } from "date-fns";
 import {
     initializeICO,
     contributeToICO,
@@ -154,8 +153,8 @@ const ICO = () => {
             });
             toast.success("ICO Initialized Successfully! Transaction: " + tx);
             await fetchIcoState();
-        } catch (err) {
-            toast.error('Error initializing ICO: ' + err);
+        } catch {
+            toast.error('ICO initilization already occurred');
         } finally {
             setLoading(false);
         }
@@ -203,8 +202,8 @@ const ICO = () => {
             });
             toast.success("Tokens Claimed Successfully! Transaction: " + tx);
             await fetchIcoState();
-        } catch (err) {
-            toast.error('Error claiming tokens: ' + err);
+        } catch {
+            toast.error('Wait For ICO to end before claiming tokens');
         } finally {
             setLoading(false);
         }
@@ -235,10 +234,9 @@ const ICO = () => {
         const interval = setInterval(() => {
             const current = new Date();
             setNow(current);
-
-            if (startDate && endDate) {
-                const start = new Date(startDate);
-                const end = new Date(endDate);
+            if (icoState?.startDate && icoState?.endDate) {
+                const start = new Date(icoState.startDate.toNumber() * 1000);
+                const end = new Date(icoState.endDate.toNumber() * 1000);
 
                 if (current < start) {
                     setIcoStatus("upcoming");
@@ -248,10 +246,38 @@ const ICO = () => {
                     setIcoStatus("expired");
                 }
             }
-        }, 1000); // Update every second
+        }, 1000);
 
         return () => clearInterval(interval);
-    }, [startDate, endDate]);
+    }, [icoState]);
+
+    const timeLeft = (() => {
+        if (!now || !icoState?.startDate) return "Unknown";
+    
+        const start = new Date(icoState.startDate.toNumber() * 1000);
+        const totalSeconds = Math.max(0, Math.floor((start.getTime() - now.getTime()) / 1000));
+    
+        const days = Math.floor(totalSeconds / (3600 * 24));
+        const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+    
+        return `${days > 0 ? `${days}d ` : ''}${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${seconds}s`;
+      })();
+
+      const endsIn = (() => {
+        if (!now || !icoState?.endDate) return "Unknown";
+    
+        const end = new Date(icoState.endDate.toNumber() * 1000);
+        const totalSeconds = Math.max(0, Math.floor((end.getTime() - now.getTime()) / 1000));
+    
+        const days = Math.floor(totalSeconds / (3600 * 24));
+        const hours = Math.floor((totalSeconds % (3600 * 24)) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+    
+        return `${days > 0 ? `${days}d ` : ''}${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${seconds}s`;
+      })();
 
     return (
         <div className="max-w-4xl mx-auto p-6 space-y-6 bg-gray-100">
@@ -376,24 +402,28 @@ const ICO = () => {
                             </div>
                         </div>
                     )}
+
                     {icoStatus && (
                         <div className={`p-4 rounded-md text-sm font-medium mb-4
-        ${icoStatus === "active" ? "bg-green-600 text-white" :
+                    ${icoStatus === "active" ? "bg-green-600 text-white" :
                                 icoStatus === "expired" ? "bg-red-600 text-white" :
                                     "bg-yellow-500 text-black"}`}
                         >
-                            {icoStatus === "active" && "🚀 ICO is Active!"}
+                            {/* Activation ico  */}
+                            {icoStatus === "active" && (
+                                <div>
+                                    🚀 ICO is Active!<br />
+                                    🕒 Ends in: {endsIn || "Unknown"}
+                                </div>
+                            )}
+                            {/* Expired ico */}
                             {icoStatus === "expired" && "⏱️ ICO has Expired"}
+
+                            {/* Upcoming ICO */}
                             {icoStatus === "upcoming" && (
                                 <div>
-                                    📅 ICO starts at: {startDate ? format(new Date(startDate), "PPpp") : "-"}<br />
-                                    ⏳ Time left: {startDate && now ? (
-                                        new Date(startDate).getTime() - now.getTime() > 0 ? (
-                                            <span>
-                                                {Math.floor((new Date(startDate).getTime() - now.getTime()) / 1000)} seconds
-                                            </span>
-                                        ) : "Starting soon..."
-                                    ) : null}
+                                    ⏳ ICO is Upcoming!<br />
+                                    🕒 Starts in: {timeLeft || "Unknown"}
                                 </div>
                             )}
                         </div>
