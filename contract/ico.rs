@@ -55,6 +55,26 @@ pub mod ico_project {
             current_time >= start && current_time <= end,
             IcoError::InvalidContributionTime
         );
+
+        const MIN_CONTRIBUTION: u64 = 100_000; // 0.0001 SOL = 100_000 lamports
+        const MAX_CONTRIBUTION: u64 = 4_500_000_000; // 4.5 SOL = 4_500_000_000 lamports
+
+        require!(
+            amount >= MIN_CONTRIBUTION,
+            IcoError::BelowMinimumContribution
+        );
+
+        let new_total = ctx
+            .accounts
+            .contribution
+            .amount
+            .checked_add(amount)
+            .ok_or(IcoError::Overflow)?;
+
+        require!(
+            new_total <= MAX_CONTRIBUTION,
+            IcoError::AboveMaximumContribution
+        );
         // Transfer SOL from user to ICO state account
         let ix = anchor_lang::solana_program::system_instruction::transfer(
             &ctx.accounts.user.key(),
@@ -88,9 +108,15 @@ pub mod ico_project {
 
         Ok(())
     }
+
     pub fn claim_tokens(ctx: Context<ClaimTokens>) -> Result<()> {
         let contribution = &mut ctx.accounts.contribution;
         let ico_state = &ctx.accounts.ico_state;
+
+        let clock = Clock::get()?;
+        let now = clock.unix_timestamp;
+
+        require!(now >= ico_state.end_date, IcoError::IcoNotEndedYet);
 
         // Ensure user has something to claim
         require!(contribution.amount > 0, IcoError::NothingToClaim);
@@ -132,6 +158,11 @@ pub mod ico_project {
 
     pub fn withdraw_sol(ctx: Context<WithdrawSol>) -> Result<()> {
         let ico_state = &mut ctx.accounts.ico_state;
+
+        let clock = Clock::get()?;
+        let now = clock.unix_timestamp;
+
+        require!(now >= ico_state.end_date, IcoError::IcoNotEndedYet);
 
         require_keys_eq!(
             ctx.accounts.authority.key(),
@@ -291,4 +322,10 @@ pub enum IcoError {
     MathOverflow,
     #[msg("Contributions are only allowed during the ICO period.")]
     InvalidContributionTime,
+    #[msg("Wait for ICO to be ended")]
+    IcoNotEndedYet,
+    #[msg("Contribution is below the minimum allowed (0.0001 SOL).")]
+    BelowMinimumContribution,
+    #[msg("Contribution exceeds the maximum allowed per wallet (4.5 SOL).")]
+    AboveMaximumContribution,
 }
