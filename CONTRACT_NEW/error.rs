@@ -48,4 +48,8 @@ pub enum IcoError {
     IcoAlreadyFinalized,
     #[msg("Insufficient fund for Refund")]
     InsufficientFunds,
+    #[msg("ICO is either cancelled or inactive.")]
+    InvalidStatus,
+    #[msg("ICO is not active.")]
+    IcoNotActive,
 }

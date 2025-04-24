@@ -1,17 +1,26 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use crate::state::{Contribution, IcoState};
+use crate::state::{Contribution, IcoState, IcoStatusAccount};
 
 #[derive(Accounts)]
 pub struct InitializeIco<'info> {
     #[account(
         init_if_needed,
         payer = authority,
-        space = 8 + IcoState::INIT_SPACE,
+        space = 12 + IcoState::INIT_SPACE,
         seeds = [b"ico-state-new", token_mint.key().as_ref()],
         bump
     )]
     pub ico_state: Account<'info, IcoState>,
+
+    #[account(
+        init_if_needed,
+        payer = authority,
+        space = 8 + IcoStatusAccount::INIT_SPACE,
+        seeds = [b"ico-status", token_mint.key().as_ref(), b"v2"],
+        bump
+    )]
+    pub ico_status: Account<'info, IcoStatusAccount>,
 
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
@@ -50,11 +59,14 @@ pub struct Contribute<'info> {
     #[account(mut)]
     pub ico_state: Account<'info, IcoState>,
 
+    #[account(mut)]
+    pub ico_status: Account<'info, IcoStatusAccount>,
+
     #[account(
         init_if_needed,
         payer = user,
         space = 8 + Contribution::INIT_SPACE,
-        seeds = [b"contribution", user.key().as_ref()],
+        seeds = [b"contribution", user.key().as_ref(), ico_state.key().as_ref()],
         bump
     )]
     pub contribution: Account<'info, Contribution>,
@@ -91,13 +103,6 @@ pub struct ClaimTokens<'info> {
 }
 
 #[derive(Accounts)]
-pub struct UpdateIcoStatus<'info> {
-    #[account(mut, has_one = authority)]
-    pub ico_state: Account<'info, IcoState>,
-    pub authority: Signer<'info>,
-}
-
-#[derive(Accounts)]
 pub struct Refund<'info> {
     #[account(
        mut,
@@ -106,6 +111,9 @@ pub struct Refund<'info> {
     )]
     pub ico_state: Account<'info, IcoState>,
 
+    #[account(mut)]
+    pub ico_status: Account<'info, IcoStatusAccount>,
+
     #[account(mut, has_one = user)]
     pub contribution: Account<'info, Contribution>,
 
@@ -113,4 +121,11 @@ pub struct Refund<'info> {
     pub user: Signer<'info>,
 
     pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateIcoStatus<'info> {
+    #[account(mut, has_one = authority)]
+    pub ico_status: Account<'info, IcoStatusAccount>,
+    pub authority: Signer<'info>,
 }

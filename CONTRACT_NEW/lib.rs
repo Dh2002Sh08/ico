@@ -35,7 +35,6 @@ pub mod ico_project {
         ico_state.end_date = end_date;
         ico_state.soft_cap = soft_cap;
         ico_state.hard_cap = hard_cap;
-        ico_state.claim_allowed = false;
 
         // Calculate token amount based on hard cap
         // ✅ FIX: Deserialize mint to read decimals properly
@@ -50,6 +49,11 @@ pub mod ico_project {
             .ok_or(IcoError::InvalidPrice)?;
 
         ico_state.token_amount = token_amount;
+
+        // ✅ Initialize status
+        let ico_status = &mut ctx.accounts.ico_status;
+        ico_status.status = IcoStatus::Active as u8;
+        ico_status.authority = ctx.accounts.authority.key();
 
         // Transfer initial tokens to the vault
 
@@ -89,6 +93,9 @@ pub mod ico_project {
             amount >= MIN_CONTRIBUTION,
             IcoError::BelowMinimumContribution
         );
+        let ico_status = &mut ctx.accounts.ico_status;
+        let status_enum = IcoStatus::from_u8(ico_status.status).ok_or(IcoError::InvalidStatus)?;
+        require!(status_enum == IcoStatus::Active, IcoError::IcoNotActive);
 
         let new_total = ctx
             .accounts
@@ -119,6 +126,7 @@ pub mod ico_project {
         // Update user's contribution record
         let contribution = &mut ctx.accounts.contribution;
         contribution.user = ctx.accounts.user.key();
+        contribution.ico_state = ctx.accounts.ico_state.key();
         contribution.amount = contribution
             .amount
             .checked_add(amount)
@@ -138,13 +146,13 @@ pub mod ico_project {
     pub fn claim_tokens(ctx: Context<ClaimTokens>) -> Result<()> {
         let contribution = &mut ctx.accounts.contribution;
         let ico_state = &ctx.accounts.ico_state;
-
-        // require!(ico_state.claim_allowed, IcoError::ClaimNotAllowedYet);
-
         let clock = Clock::get()?;
         let now = clock.unix_timestamp;
-
         require!(now >= ico_state.end_date, IcoError::IcoNotEndedYet);
+        require!(
+            ico_state.total_contributed >= ico_state.soft_cap,
+            IcoError::SoftCapNotReached
+        );
 
         // Ensure user has something to claim
         require!(contribution.amount > 0, IcoError::NothingToClaim);
@@ -198,20 +206,13 @@ pub mod ico_project {
             ico_state.authority,
             IcoError::Unauthorized
         );
-
-        // Disallow withdraw if ICO was cancelled or inactive
-        require!(
-            ico_state.status == IcoStatus::Active,
-            IcoError::IcoWithdrawNotAllowed
-        );
-
         // Ensure soft cap is reached
         require!(
             ico_state.total_contributed >= ico_state.soft_cap,
             IcoError::SoftCapNotReached
         );
 
-        let lamports = ico_state.to_account_info().lamports();
+        let lamports = **ico_state.to_account_info().lamports.borrow();
 
         **ico_state.to_account_info().try_borrow_mut_lamports()? -= lamports;
         **ctx
@@ -220,12 +221,8 @@ pub mod ico_project {
             .to_account_info()
             .try_borrow_mut_lamports()? += lamports;
 
-        // Allow token claim
-        ico_state.claim_allowed = true;
-
         Ok(())
     }
-
     pub fn refund(ctx: Context<Refund>) -> Result<()> {
         let ico_state = &ctx.accounts.ico_state;
         let contribution = &mut ctx.accounts.contribution;
@@ -233,11 +230,14 @@ pub mod ico_project {
         let clock = Clock::get()?;
         let now = clock.unix_timestamp;
 
+        let ico_status = &mut ctx.accounts.ico_status;
+        let status_enum = IcoStatus::from_u8(ico_status.status).ok_or(IcoError::InvalidStatus)?;
+        let cancelled = status_enum == IcoStatus::Cancelled;
+
         let ico_failed =
             now >= ico_state.end_date && ico_state.total_contributed < ico_state.soft_cap;
-        let ico_stopped = ico_state.status == IcoStatus::Stopped;
 
-        require!(ico_failed || ico_stopped, IcoError::RefundNotAllowed);
+        require!(cancelled || ico_failed, IcoError::RefundNotAllowed);
 
         let refund_amount = contribution.amount;
         require!(refund_amount > 0, IcoError::NoContributionToRefund);
@@ -256,62 +256,32 @@ pub mod ico_project {
             .to_account_info()
             .try_borrow_mut_lamports()? += refund_amount;
 
-        // let seeds = &[
-        //     b"ico-state-new",
-        //     ico_state.token_mint.as_ref(),
-        //     &[ctx.bumps.ico_state],
-        // ];
-        // let signer = &[&seeds[..]];
-
-        // let transfer_ctx = anchor_lang::context::CpiContext::new_with_signer(
-        //     ctx.accounts.system_program.to_account_info(),
-        //     anchor_lang::system_program::Transfer {
-        //         from: ctx.accounts.ico_state.to_account_info(),
-        //         to: ctx.accounts.user.to_account_info(),
-        //     },
-        //     signer,
-        // );
-
-        // anchor_lang::system_program::transfer(transfer_ctx, refund_amount)?;
-
         contribution.amount = 0;
 
         Ok(())
     }
 
-    pub fn update_ico_status(ctx: Context<UpdateIcoStatus>, new_status: IcoStatus) -> Result<()> {
-        let ico_state = &mut ctx.accounts.ico_state;
-
-        // safety checks
-        match new_status {
-            IcoStatus::Cancelled => {
-                // Cannot cancel if ICO already ended or cancelled
-                require!(
-                    ico_state.status != IcoStatus::Cancelled
-                        && ico_state.status != IcoStatus::Stopped,
-                    IcoError::IcoAlreadyFinalized
-                );
-            }
-            IcoStatus::Stopped => {
-                // Only stop after end_date
-                let now = Clock::get()?.unix_timestamp;
-                require!(now >= ico_state.end_date, IcoError::IcoNotEndedYet);
-            }
-            _ => {}
-        }
-
-        ico_state.status = new_status;
+    pub fn update_ico_status(ctx: Context<UpdateIcoStatus>, status: u8) -> Result<()> {
+        let status_enum = IcoStatus::from_u8(status).ok_or(IcoError::InvalidStatus)?;
+        ctx.accounts.ico_status.status = status_enum as u8;
         Ok(())
     }
-
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, InitSpace, Default)]
+impl IcoStatus {
+    pub fn from_u8(value: u8) -> Option<IcoStatus> {
+        match value {
+            0 => Some(IcoStatus::Active),
+            1 => Some(IcoStatus::Inactive),
+            2 => Some(IcoStatus::Cancelled),
+            _ => None,
+        }
+    }
+}
 #[repr(u8)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum IcoStatus {
-    #[default]
-    Active,
-    Inactive,
-    Cancelled,
-    Stopped,
+    Active = 0,
+    Inactive = 1,
+    Cancelled = 2,
 }
