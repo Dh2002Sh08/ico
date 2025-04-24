@@ -1,13 +1,12 @@
-'use client'
-
-import { BN, Program, AnchorProvider } from '@project-serum/anchor'
+import { BN, Program, AnchorProvider } from '@project-serum/anchor';
 import {
   PublicKey,
   SystemProgram,
   Transaction,
   SYSVAR_RENT_PUBKEY,
   Keypair,
-} from '@solana/web3.js'
+  SendTransactionError,
+} from '@solana/web3.js';
 import {
   TOKEN_PROGRAM_ID,
   createInitializeAccountInstruction,
@@ -15,12 +14,10 @@ import {
   ACCOUNT_SIZE,
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
-  getMint,
-} from '@solana/spl-token'
-import { IDL, programId } from './program'
+} from '@solana/spl-token';
+import { IDL, programId } from './program';
 
-export const PROGRAM_ID = new PublicKey(programId)
-
+export const PROGRAM_ID = new PublicKey(programId);
 export const VAULT_SEED = 'vault';
 
 export function getVaultAddress() {
@@ -32,42 +29,59 @@ export function getVaultAddress() {
 
 export const [vaultPda] = getVaultAddress();
 
-
 export function getProgram(provider: AnchorProvider) {
-  return new Program(IDL, PROGRAM_ID, provider)
+  return new Program(IDL, PROGRAM_ID, provider);
 }
+
 export const initializeICO = async ({
   provider,
   tokenMint,
   tokenPriceLamports,
   startDate,
   endDate,
-  tokenAmount,
+  softCap,
+  hardCap,
 }: {
   provider: AnchorProvider;
   tokenMint: PublicKey;
   tokenPriceLamports: number;
   startDate: number;
   endDate: number;
-  tokenAmount: number;
+  softCap: number;
+  hardCap: number;
 }) => {
   const program = getProgram(provider);
 
+  // Derive icoState PDA
   const [icoState] = PublicKey.findProgramAddressSync(
-    [Buffer.from('ico-state'), tokenMint.toBuffer()],
+    [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
     program.programId
   );
 
-  const userTokenAccount = await getAssociatedTokenAddress(
-    tokenMint,
-    provider.wallet.publicKey
+  console.log('ICO State PDA:', icoState.toBase58());
+
+  const [icoStatus] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ico-status'), tokenMint.toBuffer(), Buffer.from('v2')],
+    program.programId
   );
 
+  console.log('ICO Status PDA:', icoStatus.toBase58());
+  // Create a new Keypair for the vault token account
   const vault = await getAssociatedTokenAddress(
     tokenMint,
     icoState,
     true
   );
+
+  // Log the vault public key for debugging
+  console.log('Vault public key:', vault.toBase58());
+
+  // Get the user's token account (ATA)
+  const userTokenAccount = await getAssociatedTokenAddress(
+    tokenMint,
+    provider.wallet.publicKey
+  );
+  console.log('User token account:', userTokenAccount.toBase58());
 
   // Build the instruction to create the vault ATA for the icoState (if not exists)
   const createVaultIx = createAssociatedTokenAccountInstruction(
@@ -81,15 +95,18 @@ export const initializeICO = async ({
 
   tx.add(createVaultIx);
 
+  // Build the initializeIco instruction
   const initializeIx = await program.methods
     .initializeIco(
       new BN(tokenPriceLamports),
       new BN(startDate),
       new BN(endDate),
-      new BN(tokenAmount)
+      new BN(softCap),
+      new BN(hardCap)
     )
     .accounts({
       icoState,
+      icoStatus,
       userTokenAccount,
       authority: provider.wallet.publicKey,
       tokenMint,
@@ -100,6 +117,15 @@ export const initializeICO = async ({
     .instruction();
 
   tx.add(initializeIx);
+
+  // Log accounts for debugging
+  console.log('Accounts in transaction:', {
+    icoState: icoState.toBase58(),
+    userTokenAccount: userTokenAccount.toBase58(),
+    authority: provider.wallet.publicKey.toBase58(),
+    tokenMint: tokenMint.toBase58(),
+    vault: vault.toBase58(),
+  });
 
   try {
     const sig = await provider.sendAndConfirm(tx, []);
@@ -114,6 +140,7 @@ export const initializeICO = async ({
 };
 
 
+
 export const contributeToICO = async ({
   provider,
   tokenMint,
@@ -126,12 +153,17 @@ export const contributeToICO = async ({
   const program = getProgram(provider);
 
   const [icoState] = PublicKey.findProgramAddressSync(
-    [Buffer.from('ico-state'), tokenMint.toBuffer()],
+    [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
+    program.programId
+  );
+
+  const [icoStatus] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ico-status'), tokenMint.toBuffer(), Buffer.from('v2')],
     program.programId
   );
 
   const [contribution] = PublicKey.findProgramAddressSync(
-    [Buffer.from('contribution'), provider.wallet.publicKey.toBuffer()],
+    [Buffer.from('contribution'), provider.wallet.publicKey.toBuffer(), icoState.toBuffer()],
     program.programId
   );
 
@@ -141,6 +173,7 @@ export const contributeToICO = async ({
       .accounts({
         user: provider.wallet.publicKey,
         icoState,
+        icoStatus,
         contribution,
         systemProgram: SystemProgram.programId,
       })
@@ -155,6 +188,7 @@ export const contributeToICO = async ({
     throw error;
   }
 };
+
 export const claimTokens = async ({
   provider,
   tokenMint,
@@ -165,12 +199,12 @@ export const claimTokens = async ({
   const program = getProgram(provider);
 
   const [icoState] = PublicKey.findProgramAddressSync(
-    [Buffer.from('ico-state'), tokenMint.toBuffer()],
+    [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
     program.programId
   );
 
   const [contribution] = PublicKey.findProgramAddressSync(
-    [Buffer.from('contribution'), provider.wallet.publicKey.toBuffer()],
+    [Buffer.from('contribution'), provider.wallet.publicKey.toBuffer(), icoState.toBuffer()],
     program.programId
   );
 
@@ -179,11 +213,14 @@ export const claimTokens = async ({
     provider.wallet.publicKey
   );
 
+  console.log('User token account:', userTokenAccount.toBase58());
+
   const vaultTokenAccount = await getAssociatedTokenAddress(
     tokenMint,
     icoState,
     true // allowOwnerOffCurve
   );
+  console.log('Vault token account:', vaultTokenAccount.toBase58());
 
   try {
     const tx = await program.methods
@@ -220,7 +257,7 @@ export const withdrawSol = async ({
   const program = getProgram(provider);
 
   const [icoState] = PublicKey.findProgramAddressSync(
-    [Buffer.from('ico-state'), tokenMint.toBuffer()],
+    [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
     program.programId
   );
 
@@ -243,9 +280,163 @@ export const withdrawSol = async ({
   }
 };
 
+export const refund = async({
+  provider,
+  tokenMint,
+  }:
+{
+  provider: AnchorProvider;
+  tokenMint: PublicKey;
+}) => {
+  const program = getProgram(provider);
+
+  const [icoState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
+    program.programId
+  );
+  console.log('ICO State PDA:', icoState.toBase58());
+
+  const [icoStatus] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ico-status'), tokenMint.toBuffer(), Buffer.from('v2')],
+    program.programId
+  );
+  console.log('ICO Status PDA:', icoStatus.toBase58());
+
+  const [contribution] = PublicKey.findProgramAddressSync(
+    [Buffer.from('contribution'), provider.wallet.publicKey.toBuffer(), icoState.toBuffer()],
+    program.programId
+  );
+  console.log('Contribution PDA:', contribution.toBase58());
+
+  try {
+    const tx = await program.methods
+      .refund()
+      .accounts({
+        icoState,
+        icoStatus,
+        contribution,
+        user: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    console.log('Refund transaction:', tx);
+    return tx;
+  } catch (error: any) {
+    console.log('Error refunding:', error);
+    if (error.logs) {
+      console.log('Transaction logs:', error.logs);
+    }
+    throw error;
+  }
+}
+
+// Change the ico state
+// active, inactive, cancelled
+
+export const updateIcoStatus = async ({
+  provider,
+  tokenMint,
+  status,
+}: {
+  provider: AnchorProvider;
+  tokenMint: PublicKey;
+  status: number; // 0 = Active, 1 = Inactive, 2 = Cancelled
+}) => {
+  const program = getProgram(provider);
+
+  console.log("Status choose", status);
+
+  // const [icoState] = PublicKey.findProgramAddressSync(
+  //   [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
+  //   program.programId
+  // );
+
+  const [icoStatus] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ico-status'), tokenMint.toBuffer(), Buffer.from('v2')],
+    program.programId
+  );
+
+  try {
+    const tx = await program.methods
+      .updateIcoStatus(status) // pass u8
+      .accounts({
+        icoStatus,
+        authority: provider.wallet.publicKey,
+      })
+      .rpc();
+
+    console.log('ICO Status Updated:', tx);
+    return tx;
+  } catch (error: any) {
+    console.error('Error updating ICO status:', error);
+    if (error.logs) {
+      console.log('Transaction logs:', error.logs);
+    }
+    throw error;
+  }
+};
+
+
+
+
+
+// export const updateICOstate = async ({
+//   provider,
+//   state,
+//   tokenMint,
+// }:{
+//   provider: AnchorProvider,
+//   state: String,
+//   tokenMint: PublicKey,
+// }) =>{
+//   const program = getProgram(provider);
+
+//   const [icoState] = PublicKey.findProgramAddressSync(
+//     [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
+//     program.programId
+//   );
+//   console.log('ICO State PDA:', icoState.toBase58());
+//   console.log('State:', state);
+
+//   const getStatusEnum = (state: string) => {
+//     switch (state.toLowerCase()) {
+//       case 'active':
+//         return { active: {} };
+//       case 'inactive':
+//         return { inactive: {} };
+//       case 'stopped':
+//         return { stopped: {} };
+//       case 'cancelled':
+//         return { cancelled: {} };
+//       default:
+//         throw new Error(`Invalid state: ${state}`);
+//     }
+//   };
+
+//   const statusEnum = getStatusEnum(state.toString());
+
+//   try {
+//     const tx = await program.methods
+//       .updateIcoStatus(statusEnum)
+//       .accounts({
+//         icoState,
+//         authority: provider.wallet.publicKey,
+//       })
+//       .rpc();
+
+//     return tx;
+//   } catch (error: any) {
+//     console.log('Error updating ICO state:', error);
+//     if (error.logs) {
+//       console.log('Transaction logs:', error.logs);
+//     }
+//     throw error;
+//   }
+// }
+
 export const getIcoStatePDA = (tokenMint: PublicKey) => {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('ico-state'), tokenMint.toBuffer()],
+    [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
     PROGRAM_ID
   )[0];
 };

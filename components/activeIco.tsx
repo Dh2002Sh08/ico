@@ -133,53 +133,112 @@ export const IcoSummaryDashboard = () => {
     }
 };
 
-  return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">ICO Summary Dashboard</h1>
-        {/* <WalletMultiButton /> */}
-      </div>
+return (
+  <div className="container mx-auto p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    <div className="flex justify-between items-center mb-6">
+      <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+        ICO Summary Dashboard
+      </h1>
+      {/* <WalletMultiButton /> */}
+    </div>
 
-      {loading ? (
-        <div>Loading ICOs...</div>
-      ) : (
+    {loading ? (
+      <div className="flex justify-center items-center h-64">
+        <div className="flex items-center gap-3 text-gray-600 text-lg font-semibold">
+          <svg
+            className="animate-spin h-6 w-6 text-indigo-500"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          Loading ICOs...
+        </div>
+      </div>
+    ) : (
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         <table className="min-w-full table-auto">
-          <thead>
-            <tr className="border-b">
-              <th className="px-4 py-2 text-left">Token Mint</th>
-              <th className="px-4 py-2 text-left">Start Date</th>
-              <th className="px-4 py-2 text-left">End Date</th>
-              <th className="px-4 py-2 text-left">Price (SOL)</th>
-              <th className="px-4 py-2 text-left">Total Supply</th>
-              <th className="px-4 py-2 text-left">Status</th>
+          <thead className="bg-gray-50">
+            <tr className="border-b border-gray-200">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Token Mint
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Start Date
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                End Date
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Price (SOL)
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Total Supply
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                Status
+              </th>
             </tr>
           </thead>
           <tbody>
             {icos.map((ico, index) => (
-              <tr key={index} className="border-b">
-                <td className="px-4 py-2">{ico.tokenMint}</td>
-                <td className="px-4 py-2">{ico.startDate}</td>
-                <td className="px-4 py-2">{ico.endDate}</td>
-                <td className="px-4 py-2">{ico.price}</td>
-                <td className="px-4 py-2">{ico.totalSupply}</td>
-                <td className="px-4 py-2">
+              <tr
+                key={index}
+                className="border-b border-gray-100 hover:bg-gray-50 transition-all duration-200"
+              >
+                <td className="px-6 py-4 text-gray-900 font-mono text-sm">
+                  {ico.tokenMint}
+                </td>
+                <td className="px-6 py-4 text-gray-600 text-sm">
+                  {ico.startDate}
+                </td>
+                <td className="px-6 py-4 text-gray-600 text-sm">{ico.endDate}</td>
+                <td className="px-6 py-4 text-gray-600 text-sm">{ico.price}</td>
+                <td className="px-6 py-4 text-gray-600 text-sm">
+                  {ico.totalSupply}
+                </td>
+                <td className="px-6 py-4">
                   <span
-                    className={`${
-                      ico.status === 'active'
-                        ? 'bg-green-500 text-white'
-                        : ico.status === 'upcoming'
-                        ? 'bg-yellow-500 text-white'
-                        : 'bg-red-500 text-white'
-                    } px-3 py-1 rounded-full`}
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-all duration-200
+                      ${
+                        ico.status === "active"
+                          ? "bg-green-100 text-green-800"
+                          : ico.status === "upcoming"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
                   >
-                    {ico.status}
+                    <span
+                      className={`w-2 h-2 rounded-full mr-2
+                        ${
+                          ico.status === "active"
+                            ? "bg-green-500"
+                            : ico.status === "upcoming"
+                            ? "bg-yellow-500"
+                            : "bg-red-500"
+                        }`}
+                    ></span>
+                    {ico.status.charAt(0).toUpperCase() + ico.status.slice(1)}
                   </span>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      )}
-    </div>
-  );
+      </div>
+    )}
+  </div>
+);
+
 };
