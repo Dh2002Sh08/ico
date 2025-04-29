@@ -65,6 +65,13 @@ export const initializeICO = async ({
     program.programId
   );
 
+  const [whiteList] = PublicKey.findProgramAddressSync(
+    [Buffer.from('white_list'), tokenMint.toBuffer()],
+    program.programId
+  );
+
+  console.log('WhiteList PDA:', whiteList.toBase58());
+
   console.log('ICO Status PDA:', icoStatus.toBase58());
   // Create a new Keypair for the vault token account
   const vault = await getAssociatedTokenAddress(
@@ -107,6 +114,7 @@ export const initializeICO = async ({
     .accounts({
       icoState,
       icoStatus,
+      whiteList,
       userTokenAccount,
       authority: provider.wallet.publicKey,
       tokenMint,
@@ -167,6 +175,13 @@ export const contributeToICO = async ({
     program.programId
   );
 
+  const [whiteList] = PublicKey.findProgramAddressSync(
+    [Buffer.from('white_list'), tokenMint.toBuffer()],
+    program.programId
+  );
+  console.log('Available accounts:', Object.keys(program.account));
+
+  console.log('WhiteList PDA:', whiteList.toBase58());
   try {
     const tx = await program.methods
       .contribute(new BN(lamportsContributed))
@@ -174,6 +189,7 @@ export const contributeToICO = async ({
         user: provider.wallet.publicKey,
         icoState,
         icoStatus,
+        whiteList,
         contribution,
         systemProgram: SystemProgram.programId,
       })
@@ -376,6 +392,120 @@ export const updateIcoStatus = async ({
   }
 };
 
+export const addToWhitelist = async ({
+  provider,
+  walletKey,
+  tokenMint,
+}: {
+  provider: AnchorProvider;
+  walletKey: PublicKey;
+  tokenMint: PublicKey;
+}) => {
+  const program = getProgram(provider);
+
+  const [icoState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
+    program.programId
+  );
+  console.log('ICO State PDA:', icoState.toBase58());
+
+  const [whiteList] = PublicKey.findProgramAddressSync(
+    [Buffer.from('white_list'), tokenMint.toBuffer()],
+    program.programId
+  );
+
+  try {
+    const tx = await program.methods
+      .addToWhitelist(new PublicKey(walletKey))
+      .accounts({
+        whiteList,
+        icoState,
+        admin: provider.wallet.publicKey,
+      })
+      .rpc();
+
+    return tx;
+  } catch (error: any) {
+    console.error('Error adding to whitelist:', error);
+    if (error.logs) {
+      console.error('Transaction logs:', error.logs);
+    }
+    throw error;
+  }
+
+};
+
+export const toggleWhitelist = async ({
+  provider,
+  tokenMint,
+  enable,
+}: {
+  provider: AnchorProvider;
+  tokenMint: PublicKey;
+  enable: boolean;
+}) => {
+  const program = getProgram(provider);
+  console.log('Enable:', enable);
+  const [icoState] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
+    program.programId
+  );
+  console.log('ICO State PDA:', icoState.toBase58());
+
+  const [whiteList] = PublicKey.findProgramAddressSync(
+    [Buffer.from('white_list'), tokenMint.toBuffer()],
+    program.programId
+  );
+
+  try {
+    const tx = await program.methods
+      .toggleWhitelist(enable)
+      .accounts({
+        whiteList,
+        icoState,
+        admin: provider.wallet.publicKey,
+      })
+      .rpc();
+
+    return tx;
+  } catch (error: any) {
+    console.error('Error toggling whitelist:', error);
+    if (error.logs) {
+      console.error('Transaction logs:', error.logs);
+    }
+    throw error;
+  }
+}
+
+export const fetchWhitelistData = async (provider: AnchorProvider, tokenMint: PublicKey) => {
+  const program = getProgram(provider);
+  const [whitelistPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("white_list"), tokenMint.toBuffer()],
+      program.programId
+  );
+  const account = await program.account.whiteList.fetch(whitelistPDA);
+  console.log('Whitelist Account:', account.authority.toBase58());
+  return {
+      enable: account.enable,
+      authority: account.authority,
+      addresses: account.whitelistedAddresses,
+  };
+};
+
+// fetch icostatusData
+export const fetchIcoStatusData = async (provider: AnchorProvider, tokenMint: PublicKey) => {
+  const program = getProgram(provider);
+  const [icoStatusPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("ico-status"), tokenMint.toBuffer(), Buffer.from('v2')],
+      program.programId
+  );
+  const account = await program.account.icoStatusAccount.fetch(icoStatusPDA);
+  console.log('ICO Status Account:', account.authority.toBase58());
+  return {
+      authority: account.authority,
+      status: account.status,
+  };
+};
 
 
 
@@ -439,4 +569,6 @@ export const getIcoStatePDA = (tokenMint: PublicKey) => {
     [Buffer.from('ico-state-new'), tokenMint.toBuffer()],
     PROGRAM_ID
   )[0];
+
+  
 };

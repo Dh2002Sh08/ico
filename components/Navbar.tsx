@@ -11,9 +11,9 @@ const Navbar = () => {
         <Link href="/ico" className="hover:text-yellow-400 font-medium">ICO</Link>
         <Link href="/actions" className="hover:text-yellow-400 font-medium">Actions</Link>
         <Link href="/dashboard" className="hover:text-yellow-400 font-medium">Dashboard</Link>
-        <Link href="/status" className="hover:text-yellow-400 font-medium">Change Status</Link>
-        <Link href="/createToken" className="hover:text-yellow-400 font-medium">Create Token</Link>
-        <Link href="/whitepaper" className="hover:text-yellow-400 font-medium">Create Whitepaer</Link>
+        <Link href="/createToken" className="hover:text-yellow-400 font-medium">CreateToken</Link>
+        <Link href="/TokenMint" className="hover:text-yellow-400 font-medium">TokenMint</Link>
+        <Link href="/whitepaper" className="hover:text-yellow-400 font-medium">CreateWhitepaer</Link>
       </div>
       <WalletMultiButton />
     </nav>

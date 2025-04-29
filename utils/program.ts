@@ -20,6 +20,11 @@ export const IDL: Idl = {
                     "isSigner": false
                 },
                 {
+                    "name": "whiteList",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
                     "name": "userTokenAccount",
                     "isMut": true,
                     "isSigner": false
@@ -88,6 +93,11 @@ export const IDL: Idl = {
                 },
                 {
                     "name": "icoStatus",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "whiteList",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -222,6 +232,58 @@ export const IDL: Idl = {
                     "type": "u8"
                 }
             ]
+        },
+        {
+            "name": "addToWhitelist",
+            "accounts": [
+                {
+                    "name": "whiteList",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "icoState",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "admin",
+                    "isMut": false,
+                    "isSigner": true
+                }
+            ],
+            "args": [
+                {
+                    "name": "newWallet",
+                    "type": "publicKey"
+                }
+            ]
+        },
+        {
+            "name": "toggleWhitelist",
+            "accounts": [
+                {
+                    "name": "whiteList",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "icoState",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "admin",
+                    "isMut": false,
+                    "isSigner": true
+                }
+            ],
+            "args": [
+                {
+                    "name": "enable",
+                    "type": "bool"
+                }
+            ]
         }
     ],
     "accounts": [
@@ -305,6 +367,28 @@ export const IDL: Idl = {
                     {
                         "name": "authority",
                         "type": "publicKey"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "WhiteList",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "enable",
+                        "type": "bool"
+                    },
+                    {
+                        "name": "authority",
+                        "type": "publicKey"
+                    },
+                    {
+                        "name": "whitelistedAddresses",
+                        "type": {
+                            "vec": "publicKey"
+                        }
                     }
                 ]
             }
@@ -454,6 +538,21 @@ export const IDL: Idl = {
             "code": 6024,
             "name": "IcoNotActive",
             "msg": "ICO is not active."
+        },
+        {
+            "code": 6025,
+            "name": "NotWhiteListed",
+            "msg": "Not WhiteListed Address"
+        },
+        {
+            "code": 6026,
+            "name": "NotWhitelisted",
+            "msg": "User is not whitelisted."
+        },
+        {
+            "code": 6027,
+            "name": "WhitelistDisabled",
+            "msg": "WhiteList not active."
         }
     ]
 }

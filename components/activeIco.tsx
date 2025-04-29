@@ -4,14 +4,17 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { AnchorProvider, BN, Wallet } from '@project-serum/anchor';
-// import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { getMint } from '@solana/spl-token';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import '@solana/wallet-adapter-react-ui/styles.css';
-
+import Link from 'next/link';
+import { Metaplex } from '@metaplex-foundation/js';
 import { getProgram } from '../utils/useprogram';
 
 // ICOData Type
 type ICOData = {
   tokenMint: string;
+  tokenName: string;
   startDate: string;
   endDate: string;
   price: number;
@@ -31,18 +34,18 @@ export const IcoSummaryDashboard = () => {
   const [loading, setLoading] = useState(true);
   const { wallet, connected } = useWallet();
 
-  // Function to convert Lamports to SOL (for price)
+  // Convert Lamports to SOL
   const lamportsToSol = (lamports: BN) => {
-    return (lamports.toNumber() / 1_000_000_000).toFixed(9); // Convert to SOL (9 decimals)
+    return (lamports.toNumber() / 1_000_000_000).toFixed(9);
   };
 
-  // Function to format token supply based on decimals
+  // Format token supply based on decimals
   const formatTokenAmount = (amount: BN, decimals: number) => {
     const divisor = Math.pow(10, decimals);
-    return (amount.toNumber() / divisor).toFixed(decimals); // Format based on token's decimals
+    return (amount.toNumber() / divisor).toFixed(decimals);
   };
 
-  // Function to fetch ICO details
+  // Fetch ICO details
   useEffect(() => {
     const fetchICOs = async () => {
       setLoading(true);
@@ -56,7 +59,8 @@ export const IcoSummaryDashboard = () => {
         const program = getProgram(provider);
 
         const allICOAccounts = await program.account.icoState.all();
-        console.log('allICOAccounts:', allICOAccounts);
+
+        const metaplex = new Metaplex(connection);
 
         const formatted: ICOData[] = await Promise.all(
           allICOAccounts.map(async (item): Promise<ICOData> => {
@@ -64,17 +68,17 @@ export const IcoSummaryDashboard = () => {
             const endBN = item.account.endDate as BN;
             const priceBN = item.account.tokenPrice as BN;
             const supplyBN = item.account.tokenAmount as BN;
-            const mintAddress = item.account.tokenMint?.toBase58(); // Token Mint Address
+            const mintAddress = item.account.tokenMint?.toBase58();
 
-            // Get the token's mint information (decimals)
-            const tokenDecimals = await getTokenDecimals(mintAddress);
+            // Fetch token metadata
+            const { decimals, name } = await getTokenMetadata(mintAddress, connection, metaplex);
 
             const startDate = new Date(startBN.toNumber() * 1000);
             const endDate = new Date(endBN.toNumber() * 1000);
             const now = new Date();
 
-            const price = lamportsToSol(priceBN); // Price in SOL
-            const supply = formatTokenAmount(supplyBN, tokenDecimals); // Supply formatted based on decimals
+            const price = lamportsToSol(priceBN);
+            const supply = formatTokenAmount(supplyBN, decimals);
 
             const status =
               now < startDate
@@ -85,10 +89,11 @@ export const IcoSummaryDashboard = () => {
 
             return {
               tokenMint: mintAddress ?? 'Unknown',
+              tokenName: name || 'Unknown',
               startDate: formatDate(startDate),
               endDate: formatDate(endDate),
               price: parseFloat(price),
-              totalSupply: supply, // Use formatted total supply
+              totalSupply: supply,
               status,
             };
           })
@@ -107,138 +112,167 @@ export const IcoSummaryDashboard = () => {
     }
   }, [connected, wallet]);
 
-  // Fetch token's decimals using its mint address
-  const getTokenDecimals = async (mintAddress: string | undefined): Promise<number> => {
-    if (!mintAddress) return 0;
+  // Fetch token metadata (name and decimals)
+  const getTokenMetadata = async (
+    mintAddress: string | undefined,
+    connection: Connection,
+    metaplex: Metaplex
+  ): Promise<{ decimals: number; name: string }> => {
+    if (!mintAddress) return { decimals: 0, name: 'Unknown' };
 
     try {
-        const connection = new Connection('https://api.devnet.solana.com');
-        const mintPubkey = new PublicKey(mintAddress);
-        const accountInfo = await connection.getParsedAccountInfo(mintPubkey);
+      const mintPubkey = new PublicKey(mintAddress);
+      const mintInfo = await getMint(connection, mintPubkey);
 
-        if (
-            accountInfo.value &&
-            'data' in accountInfo.value &&
-            typeof accountInfo.value.data !== 'string' &&
-            'parsed' in accountInfo.value.data
-        ) {
-            const parsedInfo = accountInfo.value.data.parsed.info;
-            return parsedInfo.decimals || 0;
-        }
-
-        return 0;
+      // Fetch token name
+      const name = await fetchTokenName(mintAddress, metaplex);
+      return { decimals: mintInfo.decimals, name };
     } catch (err) {
-        console.error('Error fetching decimals:', err);
-        return 0;
+      console.error(`Error fetching token metadata for mint ${mintAddress}:`, err);
+      return { decimals: 0, name: 'Unknown' };
     }
-};
+  };
 
-return (
-  <div className="container mx-auto p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-    <div className="flex justify-between items-center mb-6">
-      <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-        ICO Summary Dashboard
-      </h1>
-      {/* <WalletMultiButton /> */}
-    </div>
+  // Fetch token name using Metaplex or fallback to Solana Token List
+  const fetchTokenName = async (mintAddress: string, metaplex: Metaplex): Promise<string> => {
+    try {
+      console.log(`Fetching metadata for mint: ${mintAddress}`);
+      const mintPubkey = new PublicKey(mintAddress);
+      const metadataAccount = await metaplex.nfts().findByMint({ mintAddress: mintPubkey });
 
-    {loading ? (
-      <div className="flex justify-center items-center h-64">
-        <div className="flex items-center gap-3 text-gray-600 text-lg font-semibold">
-          <svg
-            className="animate-spin h-6 w-6 text-indigo-500"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          Loading ICOs...
+      if (metadataAccount && metadataAccount.name) {
+        console.log(`Metaplex metadata found for ${mintAddress}:`, metadataAccount.name);
+        return metadataAccount.name.replace(/\0/g, '').trim() || mintAddress.slice(0, 8);
+      } else {
+        console.log(`No Metaplex metadata found for ${mintAddress}, trying Solana Token List`);
+        // Fallback to Solana Token List
+        const tokenListName = await fetchTokenNameFromTokenList(mintAddress);
+        return tokenListName || mintAddress.slice(0, 8);
+      }
+    } catch (err) {
+      console.error(`Error fetching Metaplex metadata for mint ${mintAddress}:`, err);
+      console.log(`Falling back to Solana Token List for ${mintAddress}`);
+      // Fallback to Solana Token List
+      const tokenListName = await fetchTokenNameFromTokenList(mintAddress);
+      return tokenListName || mintAddress.slice(0, 8);
+    }
+  };
+
+  // Fetch token name from Solana Token List (off-chain fallback)
+  const fetchTokenNameFromTokenList = async (mintAddress: string): Promise<string | null> => {
+    try {
+      const response = await fetch('https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json');
+      const tokenList = await response.json();
+      const token = tokenList.tokens.find(
+        (t: { address: string; name: string }) => t.address === mintAddress
+      );
+      if (token) {
+        console.log(`Token List metadata found for ${mintAddress}:`, token.name);
+        return token.name;
+      } else {
+        console.log(`No Token List metadata found for ${mintAddress}`);
+        return null;
+      }
+    } catch (err) {
+      console.error(`Error fetching Solana Token List for mint ${mintAddress}:`, err);
+      return null;
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-indigo-50 to-gray-100 min-h-screen">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight mb-4 sm:mb-0">
+          ICO Summary Dashboard
+        </h1>
+        {/* <WalletMultiButton /> */}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="flex items-center gap-3 text-gray-600 text-lg font-semibold">
+            <svg className="animate-spin h-6 w-6 text-indigo-600" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            Loading ICOs...
+          </div>
         </div>
-      </div>
-    ) : (
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-        <table className="min-w-full table-auto">
-          <thead className="bg-gray-50">
-            <tr className="border-b border-gray-200">
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Token Mint
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Start Date
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                End Date
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Price (SOL)
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Total Supply
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {icos.map((ico, index) => (
-              <tr
-                key={index}
-                className="border-b border-gray-100 hover:bg-gray-50 transition-all duration-200"
-              >
-                <td className="px-6 py-4 text-gray-900 font-mono text-sm">
-                  {ico.tokenMint}
-                </td>
-                <td className="px-6 py-4 text-gray-600 text-sm">
-                  {ico.startDate}
-                </td>
-                <td className="px-6 py-4 text-gray-600 text-sm">{ico.endDate}</td>
-                <td className="px-6 py-4 text-gray-600 text-sm">{ico.price}</td>
-                <td className="px-6 py-4 text-gray-600 text-sm">
-                  {ico.totalSupply}
-                </td>
-                <td className="px-6 py-4">
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-all duration-200
-                      ${
-                        ico.status === "active"
-                          ? "bg-green-100 text-green-800"
-                          : ico.status === "upcoming"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
+      ) : (
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full table-auto">
+              <thead className="bg-indigo-50">
+                <tr className="border-b border-indigo-200">
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Token Name</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Token Mint</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Start Date</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">End Date</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Price (SOL)</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Total Supply</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Status</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {icos.map((ico, index) => (
+                  <tr
+                    key={index}
+                    className="border-b border-gray-100 hover:bg-indigo-50 transition-all duration-200"
                   >
-                    <span
-                      className={`w-2 h-2 rounded-full mr-2
-                        ${
-                          ico.status === "active"
-                            ? "bg-green-500"
-                            : ico.status === "upcoming"
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
-                        }`}
-                    ></span>
-                    {ico.status.charAt(0).toUpperCase() + ico.status.slice(1)}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </div>
-);
-
+                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-900 font-medium text-sm">{ico.tokenName}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-900 font-mono text-sm truncate max-w-[150px] sm:max-w-none">
+                      {ico.tokenMint}
+                    </td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.startDate}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.endDate}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.price}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.totalSupply}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-all duration-200
+                          ${
+                            ico.status === 'active'
+                              ? 'bg-green-100 text-green-800'
+                              : ico.status === 'upcoming'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full mr-2
+                            ${
+                              ico.status === 'active'
+                                ? 'bg-green-500'
+                                : ico.status === 'upcoming'
+                                ? 'bg-yellow-500'
+                                : 'bg-red-500'
+                            }`}
+                        ></span>
+                        {ico.status.charAt(0).toUpperCase() + ico.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4">
+                      <Link href={`/actions?mint=${ico.tokenMint}`}>
+                        <button
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-200 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          disabled={ico.status !== 'active'}
+                        >
+                          Contribute
+                        </button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };

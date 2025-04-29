@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
-use crate::state::{Contribution, IcoState, IcoStatusAccount};
+use crate::state::{Contribution, IcoState, IcoStatusAccount, WhiteList};
 
 #[derive(Accounts)]
 pub struct InitializeIco<'info> {
@@ -21,6 +21,15 @@ pub struct InitializeIco<'info> {
         bump
     )]
     pub ico_status: Account<'info, IcoStatusAccount>,
+
+    #[account(
+        init_if_needed,
+        payer = authority,
+        space = 8 + WhiteList::INIT_SPACE,
+        seeds = [b"white_list", token_mint.key().as_ref()],
+        bump
+    )]
+    pub white_list: Account<'info, WhiteList>,
 
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
@@ -61,6 +70,8 @@ pub struct Contribute<'info> {
 
     #[account(mut)]
     pub ico_status: Account<'info, IcoStatusAccount>,
+    #[account(mut)]
+    pub white_list: Account<'info, WhiteList>,
 
     #[account(
         init_if_needed,
@@ -128,4 +139,14 @@ pub struct UpdateIcoStatus<'info> {
     #[account(mut, has_one = authority)]
     pub ico_status: Account<'info, IcoStatusAccount>,
     pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateWhitelist<'info> {
+    #[account(mut)]
+    pub white_list: Account<'info, WhiteList>,
+    #[account(mut)]
+    pub ico_state: Account<'info, IcoState>,
+    #[account()]
+    pub admin: Signer<'info>,
 }

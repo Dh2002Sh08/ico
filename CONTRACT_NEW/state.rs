@@ -30,3 +30,12 @@ pub struct IcoStatusAccount {
     pub status: u8, // Use u8 to represent enum variants
     pub authority: Pubkey,
 }
+
+#[account]
+#[derive(InitSpace)]
+pub struct WhiteList {
+    pub enable: bool,
+    pub authority: Pubkey,
+    #[max_len(100)]
+    pub whitelisted_addresses: Vec<Pubkey>,
+}

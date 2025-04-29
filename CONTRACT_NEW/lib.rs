@@ -54,7 +54,11 @@ pub mod ico_project {
         let ico_status = &mut ctx.accounts.ico_status;
         ico_status.status = IcoStatus::Active as u8;
         ico_status.authority = ctx.accounts.authority.key();
-
+        // whitelist owner address
+        let white_list = &mut ctx.accounts.white_list;
+        white_list.authority = ctx.accounts.authority.key();
+        white_list.whitelisted_addresses = vec![];
+        white_list.enable = false;
         // Transfer initial tokens to the vault
 
         let destination = &ctx.accounts.vault;
@@ -72,14 +76,15 @@ pub mod ico_project {
         anchor_spl::token::transfer(CpiContext::new(cpi_program, cpi_accounts), token_amount)?;
 
         Ok(())
-    }
+    }   
 
     pub fn contribute(ctx: Context<Contribute>, amount: u64) -> Result<()> {
         let clock = Clock::get()?;
         let current_time = clock.unix_timestamp;
+        let ico_state = &mut ctx.accounts.ico_state;
 
-        let start = ctx.accounts.ico_state.start_date;
-        let end = ctx.accounts.ico_state.end_date;
+        let start = ico_state.start_date;
+        let end = ico_state.end_date;
 
         require!(
             current_time >= start && current_time <= end,
@@ -87,7 +92,6 @@ pub mod ico_project {
         );
 
         const MIN_CONTRIBUTION: u64 = 100_000; // 0.0001 SOL = 100_000 lamports
-        const MAX_CONTRIBUTION: u64 = 4_500_000_000; // 4.5 SOL = 4_500_000_000 lamports
 
         require!(
             amount >= MIN_CONTRIBUTION,
@@ -97,21 +101,29 @@ pub mod ico_project {
         let status_enum = IcoStatus::from_u8(ico_status.status).ok_or(IcoError::InvalidStatus)?;
         require!(status_enum == IcoStatus::Active, IcoError::IcoNotActive);
 
-        let new_total = ctx
-            .accounts
-            .contribution
-            .amount
-            .checked_add(amount)
-            .ok_or(IcoError::Overflow)?;
-
+        // ✅ New: Check whitelist
+        let white_list = &ctx.accounts.white_list;
+        if white_list.enable {
+            require!(
+                white_list
+                    .whitelisted_addresses
+                    .contains(&ctx.accounts.user.key()),
+                IcoError::NotWhitelisted
+            );
+        }
         require!(
-            new_total <= MAX_CONTRIBUTION,
-            IcoError::AboveMaximumContribution
+            ico_state
+                .total_contributed
+                .checked_add(amount)
+                .ok_or(IcoError::Overflow)?
+                <= ico_state.hard_cap,
+            IcoError::HardCapReached
         );
+
         // Transfer SOL from user to ICO state account
         let ix = anchor_lang::solana_program::system_instruction::transfer(
             &ctx.accounts.user.key(),
-            &ctx.accounts.ico_state.key(),
+            &ico_state.key(),
             amount,
         );
 
@@ -119,22 +131,20 @@ pub mod ico_project {
             &ix,
             &[
                 ctx.accounts.user.to_account_info(),
-                ctx.accounts.ico_state.to_account_info(),
+                ico_state.to_account_info(),
             ],
         )?;
 
         // Update user's contribution record
         let contribution = &mut ctx.accounts.contribution;
         contribution.user = ctx.accounts.user.key();
-        contribution.ico_state = ctx.accounts.ico_state.key();
+        contribution.ico_state = ico_state.key();
         contribution.amount = contribution
             .amount
             .checked_add(amount)
             .ok_or(IcoError::Overflow)?;
 
         // Update ICO state
-        let ico_state = &mut ctx.accounts.ico_state;
-
         ico_state.total_contributed = ico_state
             .total_contributed
             .checked_add(amount)
@@ -212,14 +222,17 @@ pub mod ico_project {
             IcoError::SoftCapNotReached
         );
 
-        let lamports = **ico_state.to_account_info().lamports.borrow();
+        let ico_account_info = ico_state.to_account_info();
+        let authority_account_info = ctx.accounts.authority.to_account_info();
 
-        **ico_state.to_account_info().try_borrow_mut_lamports()? -= lamports;
-        **ctx
-            .accounts
-            .authority
-            .to_account_info()
-            .try_borrow_mut_lamports()? += lamports;
+        // Calculate how much we can safely withdraw
+        let rent = Rent::get()?;
+        let rent_lamports = rent.minimum_balance(ico_account_info.data_len());
+        let available_lamports = **ico_account_info.lamports.borrow() - rent_lamports;
+
+        // Transfer only the available lamports (leave enough for rent)
+        **ico_account_info.try_borrow_mut_lamports()? -= available_lamports;
+        **authority_account_info.try_borrow_mut_lamports()? += available_lamports;
 
         Ok(())
     }
@@ -266,6 +279,34 @@ pub mod ico_project {
         ctx.accounts.ico_status.status = status_enum as u8;
         Ok(())
     }
+
+    pub fn add_to_whitelist(ctx: Context<UpdateWhitelist>, new_wallet: Pubkey) -> Result<()> {
+        let white_list = &mut ctx.accounts.white_list;
+        let ico_state = &mut ctx.accounts.ico_state;
+        require!(white_list.enable, IcoError::WhitelistDisabled);
+        let signer = ctx.accounts.admin.key();
+        require!(
+            white_list.authority == signer && ico_state.authority == signer,
+            IcoError::Unauthorized
+        );
+        if !white_list.whitelisted_addresses.contains(&new_wallet) {
+            white_list.whitelisted_addresses.push(new_wallet);
+        }
+        Ok(())
+    }
+
+    pub fn toggle_whitelist(ctx: Context<UpdateWhitelist>, enable: bool) -> Result<()> {
+        let white_list = &mut ctx.accounts.white_list;
+        let ico_state = &ctx.accounts.ico_state;
+        let signer = ctx.accounts.admin.key();
+        require!(
+            white_list.authority == signer && ico_state.authority == signer,
+            IcoError::Unauthorized
+        );
+        white_list.enable = enable;
+        Ok(())
+    }
+
 }
 
 impl IcoStatus {

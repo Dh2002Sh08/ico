@@ -52,4 +52,12 @@ pub enum IcoError {
     InvalidStatus,
     #[msg("ICO is not active.")]
     IcoNotActive,
+    #[msg("Not WhiteListed Address")]
+    NotWhiteListed,
+    #[msg("User is not whitelisted.")]
+    NotWhitelisted,
+    #[msg("WhiteList not active.")]
+    WhitelistDisabled,
+    #[msg("Hard cap has already been reached.")]
+    HardCapReached,
 }
