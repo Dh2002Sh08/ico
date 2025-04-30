@@ -84,8 +84,8 @@ const WhiteList = () => {
             toast.dismiss(); // clears all active toasts
             setWhitelistAddress('');
             await fetchWhitelistInfo(); // Refresh the list after adding
-        } catch (err: any) {
-            toast.error(`Error adding to whitelist: ${err.message}`, {
+        } catch (err) {
+            toast.error(`Error adding to whitelist: ${err}`, {
                 toastId: 'whitelist-error',
                 autoClose: 5000,
             });
@@ -119,10 +119,10 @@ const WhiteList = () => {
             toast.dismiss();
 
             await fetchWhitelistInfo(); // Refresh toggle status
-        } catch (err: any) {
+        } catch (err) {
             toast.dismiss();
 
-            toast.error(`Error toggling whitelist: ${err.message}`, {
+            toast.error(`Error toggling whitelist: ${err}`, {
                 toastId: 'toggle-error',
                 autoClose: 5000,
             });

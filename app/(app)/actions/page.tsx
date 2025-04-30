@@ -1,9 +1,11 @@
 import Activity from '@/components/activity'
-import React from 'react'
+import React, { Suspense } from 'react'
 
 function page() {
   return (
-    <Activity />
+    <Suspense fallback={<div>Loading...</div>}>
+            <Activity />
+        </Suspense>
   )
 }
 

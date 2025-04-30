@@ -43,7 +43,6 @@ const ICO = () => {
   const { publicKey, wallet, connected, signTransaction, signAllTransactions } = useWallet();
   const [loading, setLoading] = useState(false);
   const [icoState, setIcoState] = useState<IcoState | null>(null);
-  const [icoStatechange, setIcoStatechange] = useState('');
   const [tokenPrice, setTokenPrice] = useState("");
   const [icoStatus, setIcoStatus] = useState<"upcoming" | "active" | "expired" | null>(null);
   const [now, setNow] = useState<Date | null>(null);

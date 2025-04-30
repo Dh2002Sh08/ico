@@ -308,43 +308,43 @@ const Activity = () => {
 
 
     return (
-        <div className="max-w-5xl mx-auto p-8 space-y-8 bg-gray-50 min-h-screen">
+        <div className="max-w-5xl mx-auto px-6 py-10 space-y-10 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
             <ToastContainer position="top-right" />
-    
+
             <div className="flex justify-between items-center">
-                <h1 className="text-4xl font-extrabold text-gray-800">ICO Actions</h1>
+                <h1 className="text-5xl font-extrabold text-gray-800 tracking-tight">🎯 ICO Actions</h1>
             </div>
-    
+
             {/* ICO Status Description */}
-            <div className="bg-white rounded-xl shadow p-6 border border-blue-100">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">ICO Status</h2>
-                <p className="text-lg text-blue-600 font-medium">
+            <div className="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-blue-400">
+                <h2 className="text-2xl font-bold text-gray-800 mb-3">ICO Status</h2>
+                <p className="text-lg text-blue-600 font-semibold mb-2">
                     {icoStatus !== null ? STATUS_MAP[icoStatusCheck!] : "Loading..."}
                 </p>
-                <div className="mt-4 text-sm text-gray-600 space-y-1">
-                    <p><strong> * Active:</strong> Can contribute.</p>
-                    <p><strong> * Inactive:</strong> Cannot contribute.</p>
-                    <p><strong> * Cancelled:</strong> ICO stopped, refunds enabled.</p>
+                <div className="text-sm text-gray-600 space-y-1 pl-1">
+                    <p><strong>✔ Active:</strong> Contributions accepted</p>
+                    <p><strong>⏸ Inactive:</strong> No contributions</p>
+                    <p><strong>❌ Cancelled:</strong> Refunds available</p>
                 </div>
             </div>
-    
+
             {/* ICO Info Panel */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6 border border-gray-100">
+            <div className="bg-white rounded-3xl shadow-xl p-8 space-y-8 border border-gray-100">
                 <div>
-                    <label className="block text-base font-semibold text-gray-700 mb-2">
+                    <label className="block text-lg font-medium text-gray-700 mb-2">
                         Token Mint Address
                     </label>
                     <input
                         type="text"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         placeholder="Enter Token Mint Address"
                         value={mintInput}
                         onChange={(e) => setMintInput(e.target.value)}
                     />
                 </div>
-    
+
                 {icoState && (
-                    <div className="bg-gray-100 p-6 rounded-xl space-y-4">
+                    <div className="bg-gray-100 p-6 rounded-xl space-y-6">
                         <h2 className="text-2xl font-bold text-gray-800">ICO State</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <ICOField label="Authority" value={truncateAddress(icoState.authority.toBase58())} />
@@ -360,49 +360,44 @@ const Activity = () => {
                         </div>
                     </div>
                 )}
-    
+
                 {/* Status Banner */}
                 {icoStatus && (
-                    <div className={`p-4 rounded-lg font-semibold text-sm shadow-md transition
+                    <div className={`p-4 rounded-xl font-semibold text-sm shadow transition duration-300
                         ${icoStatus === "active" ? "bg-green-500 text-white" :
                             icoStatus === "expired" ? "bg-red-500 text-white" :
                                 "bg-yellow-400 text-black"}`}>
                         {icoStatus === "active" && (
                             <div>
                                 🚀 ICO is Active!<br />
-                                🕒 Ends in: {endsIn || "Unknown"}
+                                ⏳ Ends in: {endsIn || "Unknown"}
                             </div>
                         )}
                         {icoStatus === "expired" && "⏱️ ICO has Expired"}
                         {icoStatus === "upcoming" && (
                             <div>
-                                ⏳ ICO is Upcoming!<br />
+                                🕓 ICO is Upcoming<br />
                                 🕒 Starts in: {timeLeft || "Unknown"}
                             </div>
                         )}
                     </div>
                 )}
-    
-                {/* Withdraw Button for Authority */}
+
+                {/* Authority Withdraw */}
                 {connected && icoState && icoState.authority.equals(publicKey!) && (
                     <button
-                        className="w-full bg-red-600 text-white py-3 rounded-xl shadow-md hover:bg-red-700 transition"
-                        onClick={async () => {
-                            if (!icoState) {
-                                toast.error("ICO state is not available.");
-                                return;
-                            }
-                            await handleWithdrawSol();
-                        }}
+                        className="w-full bg-gradient-to-r from-red-500 to-red-700 text-white py-3 rounded-xl shadow hover:opacity-90 transition"
+                        onClick={handleWithdrawSol}
                         disabled={loading}
                     >
                         {loading ? 'Withdrawing...' : 'Withdraw SOL'}
                     </button>
                 )}
-    
-                {/* User Interaction Actions */}
+
+                {/* User Actions */}
                 {connected && (
                     <div className="space-y-6">
+                        {/* Contribution Input */}
                         <div>
                             <label className="block text-base font-semibold text-gray-700 mb-2">
                                 Contribution Amount (SOL)
@@ -415,60 +410,70 @@ const Activity = () => {
                                 onChange={(e) => setContributionAmount(e.target.value)}
                             />
                         </div>
-    
+
+                        {/* Action Buttons */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <button
-                                className="bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
-                                onClick={async () => {
-                                    if (!icoState || icoStatusCheck !== 0) {
-                                        toast.error("ICO is not active. Cannot contribute.");
-                                        return;
-                                    }
-                                    if (!contributionAmount || parseFloat(contributionAmount) <= 0) {
-                                        toast.error("Enter a valid contribution amount.");
-                                        return;
-                                    }
-                                    await handleContribute();
-                                }}
-                                disabled={loading || !contributionAmount}
-                            >
-                                {loading ? 'Contributing...' : 'Contribute'}
-                            </button>
-    
-                            <button
-                                className="bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
-                                onClick={async () => {
-                                    if (!icoState) {
-                                        toast.error("ICO not ready for claiming.");
-                                        return;
-                                    }
-                                    await handleClaim();
-                                }}
-                                disabled={loading}
-                            >
-                                {loading ? 'Claiming...' : 'Claim Tokens'}
-                            </button>
-    
-                            <button
-                                className="bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700 transition disabled:opacity-50"
-                                onClick={async () => {
-                                    if (icoStatusCheck !== 2) {
-                                        toast.error("ICO is not cancelled. Refund not allowed.");
-                                        return;
-                                    }
-                                    await handleRefund();
-                                }}
-                                disabled={loading}
-                            >
-                                {loading ? 'Refund in progress...' : 'Refund'}
-                            </button>
+                            {/* ✅ Contribute Button */}
+                            {(icoState && icoStatusCheck === 0 && icoState.totalContributed.toNumber() < icoState.hardCap.toNumber() && Date.now() / 1000 < icoState.endDate.toNumber()) && (
+                                <button
+                                    className="bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
+                                    onClick={async () => {
+                                        if (!icoState || icoStatusCheck !== 0) {
+                                            toast.error("ICO is not active. Cannot contribute.");
+                                            return;
+                                        }
+                                        if (!contributionAmount || parseFloat(contributionAmount) <= 0) {
+                                            toast.error("Enter a valid contribution amount.");
+                                            return;
+                                        }
+                                        await handleContribute();
+                                    }}
+                                    disabled={loading || !contributionAmount}
+                                >
+                                    {loading ? 'Contributing...' : 'Contribute'}
+                                </button>
+                            )}
+
+                            {/* ✅ Claim Token Button */}
+                            {(icoState &&
+                                icoStatusCheck === 0 &&
+                                icoState.totalContributed >= icoState.softCap &&
+                                Date.now() / 1000 >= icoState.endDate.toNumber()) && (
+                                    <button
+                                        className="bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
+                                        onClick={async () => {
+                                            await handleClaim();
+                                        }}
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Claiming...' : 'Claim Tokens'}
+                                    </button>
+                                )}
+
+                            {/* ✅ Refund Button */}
+                            {(icoState && (
+                                icoStatusCheck === 2 || // Cancelled
+                                (Date.now() / 1000 >= icoState.endDate.toNumber() && icoState.totalContributed.toNumber() < icoState.softCap.toNumber())
+                            )) && (
+                                    <button
+                                        className="bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700 transition disabled:opacity-50"
+                                        onClick={async () => {
+                                            await handleRefund();
+                                        }}
+                                        disabled={loading}
+                                    >
+                                        {loading ? 'Refund in progress...' : 'Refund'}
+                                    </button>
+                                )}
                         </div>
                     </div>
                 )}
+
             </div>
         </div>
     );
-    
+
+
 
     // Helper component for repeated ICO info fields
     function ICOField({ label, value }: { label: string, value: string }) {

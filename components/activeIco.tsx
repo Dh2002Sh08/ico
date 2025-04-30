@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { AnchorProvider, BN, Wallet } from '@project-serum/anchor';
 import { getMint } from '@solana/spl-token';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import Link from 'next/link';
 import { Metaplex } from '@metaplex-foundation/js';
@@ -44,6 +43,52 @@ export const IcoSummaryDashboard = () => {
     const divisor = Math.pow(10, decimals);
     return (amount.toNumber() / divisor).toFixed(decimals);
   };
+
+  // Fetch token name using Metaplex or fallback to Solana Token List
+  const fetchTokenName = useCallback(async (mintAddress: string, metaplex: Metaplex): Promise<string> => {
+    try {
+      console.log(`Fetching metadata for mint: ${mintAddress}`);
+      const mintPubkey = new PublicKey(mintAddress);
+      const metadataAccount = await metaplex.nfts().findByMint({ mintAddress: mintPubkey });
+
+      if (metadataAccount && metadataAccount.name) {
+        console.log(`Metaplex metadata found for ${mintAddress}:`, metadataAccount.name);
+        return metadataAccount.name.replace(/\0/g, '').trim() || mintAddress.slice(0, 8);
+      } else {
+        console.log(`No Metaplex metadata found for ${mintAddress}, trying Solana Token List`);
+        // Fallback to Solana Token List
+        const tokenListName = await fetchTokenNameFromTokenList(mintAddress);
+        return tokenListName || mintAddress.slice(0, 8);
+      }
+    } catch (err) {
+      console.error(`Error fetching Metaplex metadata for mint ${mintAddress}:`, err);
+      console.log(`Falling back to Solana Token List for ${mintAddress}`);
+      // Fallback to Solana Token List
+      const tokenListName = await fetchTokenNameFromTokenList(mintAddress);
+      return tokenListName || mintAddress.slice(0, 8);
+    }
+  }, []);
+
+  // Fetch token metadata (name and decimals)
+  const getTokenMetadata = useCallback(async (
+    mintAddress: string | undefined,
+    connection: Connection,
+    metaplex: Metaplex
+  ): Promise<{ decimals: number; name: string }> => {
+    if (!mintAddress) return { decimals: 0, name: 'Unknown' };
+
+    try {
+      const mintPubkey = new PublicKey(mintAddress);
+      const mintInfo = await getMint(connection, mintPubkey);
+
+      // Fetch token name
+      const name = await fetchTokenName(mintAddress, metaplex);
+      return { decimals: mintInfo.decimals, name };
+    } catch (err) {
+      console.error(`Error fetching token metadata for mint ${mintAddress}:`, err);
+      return { decimals: 0, name: 'Unknown' };
+    }
+  }, [fetchTokenName]);
 
   // Fetch ICO details
   useEffect(() => {
@@ -110,53 +155,7 @@ export const IcoSummaryDashboard = () => {
     if (connected && wallet) {
       fetchICOs();
     }
-  }, [connected, wallet]);
-
-  // Fetch token metadata (name and decimals)
-  const getTokenMetadata = async (
-    mintAddress: string | undefined,
-    connection: Connection,
-    metaplex: Metaplex
-  ): Promise<{ decimals: number; name: string }> => {
-    if (!mintAddress) return { decimals: 0, name: 'Unknown' };
-
-    try {
-      const mintPubkey = new PublicKey(mintAddress);
-      const mintInfo = await getMint(connection, mintPubkey);
-
-      // Fetch token name
-      const name = await fetchTokenName(mintAddress, metaplex);
-      return { decimals: mintInfo.decimals, name };
-    } catch (err) {
-      console.error(`Error fetching token metadata for mint ${mintAddress}:`, err);
-      return { decimals: 0, name: 'Unknown' };
-    }
-  };
-
-  // Fetch token name using Metaplex or fallback to Solana Token List
-  const fetchTokenName = async (mintAddress: string, metaplex: Metaplex): Promise<string> => {
-    try {
-      console.log(`Fetching metadata for mint: ${mintAddress}`);
-      const mintPubkey = new PublicKey(mintAddress);
-      const metadataAccount = await metaplex.nfts().findByMint({ mintAddress: mintPubkey });
-
-      if (metadataAccount && metadataAccount.name) {
-        console.log(`Metaplex metadata found for ${mintAddress}:`, metadataAccount.name);
-        return metadataAccount.name.replace(/\0/g, '').trim() || mintAddress.slice(0, 8);
-      } else {
-        console.log(`No Metaplex metadata found for ${mintAddress}, trying Solana Token List`);
-        // Fallback to Solana Token List
-        const tokenListName = await fetchTokenNameFromTokenList(mintAddress);
-        return tokenListName || mintAddress.slice(0, 8);
-      }
-    } catch (err) {
-      console.error(`Error fetching Metaplex metadata for mint ${mintAddress}:`, err);
-      console.log(`Falling back to Solana Token List for ${mintAddress}`);
-      // Fallback to Solana Token List
-      const tokenListName = await fetchTokenNameFromTokenList(mintAddress);
-      return tokenListName || mintAddress.slice(0, 8);
-    }
-  };
+  }, [connected, wallet, getTokenMetadata]);
 
   // Fetch token name from Solana Token List (off-chain fallback)
   const fetchTokenNameFromTokenList = async (mintAddress: string): Promise<string | null> => {
