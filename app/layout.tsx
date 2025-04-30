@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-100 dark:from-gray-900 dark:to-gray-800">
+      <body className="min-h-screen bg-gradient-to-r from-purple-300 via-white to-purple-300">
         <SolanaWalletProvider>
           <Navbar />
           {children}
