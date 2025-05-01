@@ -14,6 +14,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { BN } from '@project-serum/anchor';
 import { getMint } from '@solana/spl-token';
+import { useRouter } from 'next/navigation';
 
 interface IcoState {
   authority: PublicKey;
@@ -48,6 +49,7 @@ const ICO = () => {
   const [now, setNow] = useState<Date | null>(null);
 
   const { connection } = useConnection();
+  const router = useRouter();
 
   const provider = useMemo(() => {
     if (!wallet || !publicKey || !signTransaction || !signAllTransactions) return null;
@@ -155,6 +157,9 @@ const ICO = () => {
       });
       toast.success("ICO Initialized Successfully! Transaction: " + tx);
       await fetchIcoState();
+
+      // Redirect after success
+    router.push(`/actions?mint=${mintInput}`);
     } catch (err) {
       toast.error('err' + err);
       console.error('Error initializing ICO:', err);

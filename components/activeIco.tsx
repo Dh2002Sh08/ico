@@ -184,9 +184,8 @@ export const IcoSummaryDashboard = () => {
         <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight mb-4 sm:mb-0">
           ICO Summary Dashboard
         </h1>
-        {/* <WalletMultiButton /> */}
       </div>
-
+  
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <div className="flex items-center gap-3 text-gray-600 text-lg font-semibold">
@@ -214,7 +213,6 @@ export const IcoSummaryDashboard = () => {
                   <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Price (SOL)</th>
                   <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Total Supply</th>
                   <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Status</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -223,9 +221,25 @@ export const IcoSummaryDashboard = () => {
                     key={index}
                     className="border-b border-gray-100 hover:bg-indigo-50 transition-all duration-200"
                   >
-                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-900 font-medium text-sm">{ico.tokenName}</td>
+                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-sm">
+                      <Link href={`/actions?mint=${ico.tokenMint}`}>
+                        <button
+                          className="text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
+                          title="Click to contribute"
+                        >
+                          {ico.tokenName}
+                        </button>
+                      </Link>
+                    </td>
                     <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-900 font-mono text-sm truncate max-w-[150px] sm:max-w-none">
-                      {ico.tokenMint}
+                      <a
+                        href={`https://explorer.solana.com/address/${ico.tokenMint}?cluster=devnet`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        {ico.tokenMint}
+                      </a>
                     </td>
                     <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.startDate}</td>
                     <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.endDate}</td>
@@ -255,16 +269,6 @@ export const IcoSummaryDashboard = () => {
                         {ico.status.charAt(0).toUpperCase() + ico.status.slice(1)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 sm:px-6 sm:py-4">
-                      <Link href={`/actions?mint=${ico.tokenMint}`}>
-                        <button
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all duration-200 text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
-                          disabled={ico.status !== 'active'}
-                        >
-                          Contribute
-                        </button>
-                      </Link>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -274,4 +278,5 @@ export const IcoSummaryDashboard = () => {
       )}
     </div>
   );
+  
 };

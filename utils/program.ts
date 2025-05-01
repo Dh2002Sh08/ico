@@ -255,7 +255,9 @@ export const IDL: Idl = {
             "args": [
                 {
                     "name": "newWallet",
-                    "type": "publicKey"
+                    "type": {
+                        "vec": "publicKey"
+                    }
                 }
             ]
         },
@@ -553,6 +555,11 @@ export const IDL: Idl = {
             "code": 6027,
             "name": "WhitelistDisabled",
             "msg": "WhiteList not active."
+        },
+        {
+            "code": 6028,
+            "name": "HardCapReached",
+            "msg": "Hard cap has already been reached."
         }
     ]
 }

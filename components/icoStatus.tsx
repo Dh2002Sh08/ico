@@ -15,6 +15,7 @@ import {
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { BN } from '@project-serum/anchor';
+import { useSearchParams } from 'next/navigation';
 
 interface IcoState {
     authority: PublicKey;
@@ -51,6 +52,7 @@ const IcoStatus = () => {
     const [now, setNow] = useState<Date | null>(null);
 
     const { connection } = useConnection();
+    const searchParams = useSearchParams();
 
     const provider = useMemo(() => {
         if (!wallet || !publicKey || !signTransaction || !signAllTransactions) return null;
@@ -89,20 +91,13 @@ const IcoStatus = () => {
         }
     }, [provider, IcoInfo, icoStatePDA]);
 
-    // const fetchTokenInfo = useCallback(async () => {
-    //     if (!provider || !IcoInfo) return;
-    //     try {
-    //         const mintInfo = await getMint(provider.connection, IcoInfo);
-    //         // For now, we'll use a placeholder symbol. In a real app, you might want to fetch this from a token registry
-    //         setTokenInfo({
-    //             symbol: 'TOKEN', // You can replace this with actual token symbol lookup
-    //             decimals: mintInfo.decimals
-    //         });
-    //     } catch (err) {
-    //         console.error('Error fetching token info:', err);
-    //         setTokenInfo(null);
-    //     }
-    // }, [provider, IcoInfo]);
+    useEffect(() => {
+      if (!searchParams) return
+      const address = searchParams.get('mint')
+      if (address) {
+          setMintInput(address)
+      }
+  }, [searchParams])
 
     useEffect(() => {
         if (IcoInfo && provider) {
@@ -229,13 +224,7 @@ const IcoStatus = () => {
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Token Mint Address
               </label>
-              <input
-                type="text"
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none"
-                placeholder="Enter Token Mint Address"
-                value={mintInput}
-                onChange={(e) => setMintInput(e.target.value)}
-              />
+              <p className="text-sm text-gray-500 mb-2">{mintInput}</p>
             </div>
   
             {/* ICO Status Display */}

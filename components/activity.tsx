@@ -14,11 +14,14 @@ import {
     withdrawSol,
     refund,
     fetchIcoStatusData,
+    fetchWhitelistData,
 } from '../utils/useprogram';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { BN } from '@project-serum/anchor';
 import { getMint } from '@solana/spl-token';
+import IcoStatus from './icoStatus';
+import WhiteList from './whiteList';
 
 interface IcoState {
     authority: PublicKey;
@@ -38,11 +41,6 @@ interface TokenInfo {
     decimals: number;
 }
 
-const STATUS_MAP = {
-    0: "Active",
-    1: "Inactive",
-    2: "Cancelled",
-};
 
 const Activity = () => {
     const [mintInput, setMintInput] = useState('');
@@ -54,9 +52,11 @@ const Activity = () => {
     const [icoStatus, setIcoStatus] = useState<"upcoming" | "active" | "expired" | null>(null);
     const [now, setNow] = useState<Date | null>(null);
     const [icoStatusCheck, setIcoStatusCheck] = useState<0 | 1 | 2 | null>(null);
+    const [whitelistStatus, setWhitelistStatus] = useState<boolean | null>(null);
+    const [whitelistedAddresses, setWhitelistedAddresses] = useState<PublicKey[]>([]);
 
     const { connection } = useConnection();
-    const searchParams = useSearchParams()
+    const searchParams = useSearchParams();
 
     const provider = useMemo(() => {
         if (!wallet || !publicKey || !signTransaction || !signAllTransactions) return null;
@@ -123,6 +123,24 @@ const Activity = () => {
             setTokenInfo(null);
         }
     }, [provider, IcoInfo]);
+
+    const fetchWhitelistInfo = useCallback(async () => {
+        if (!provider || !IcoInfo) return;
+
+        try {
+            const data = await fetchWhitelistData(provider, IcoInfo);
+            setWhitelistStatus(data.enable);
+            setWhitelistedAddresses(data.addresses);
+        } catch (err) {
+            console.error("Failed to fetch whitelist data", err);
+            setWhitelistStatus(null);
+            setWhitelistedAddresses([]);
+        }
+    }, [provider, IcoInfo]);
+
+    useEffect(() => {
+        if (IcoInfo) fetchWhitelistInfo();
+    }, [IcoInfo, fetchWhitelistInfo]);
 
     useEffect(() => {
         const getchIcoStatusInfo = async () => {
@@ -311,38 +329,43 @@ const Activity = () => {
         <div className="max-w-5xl mx-auto px-6 py-10 space-y-10 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
             <ToastContainer position="top-right" />
 
-            <div className="flex justify-between items-center">
-                <h1 className="text-5xl font-extrabold text-gray-800 tracking-tight">🎯 ICO Actions</h1>
+            <div className="flex flex-wrap items-center gap-4">
+                {/* Whitelist Status Badge */}
+                <span
+                    className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${whitelistStatus === null
+                        ? 'bg-gray-300 text-gray-700'
+                        : whitelistStatus
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}
+                >
+                    {whitelistStatus === null
+                        ? 'Whitelist: Not loaded'
+                        : whitelistStatus
+                            ? 'Whitelist: ENABLED'
+                            : 'Whitelist: DISABLED'}
+                </span>
+
+                {/* ICO Status Badge */}
+                {icoStatusCheck !== null && (
+                    <span
+                        className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${icoStatusCheck === 0
+                            ? 'bg-green-100 text-green-700'
+                            : icoStatusCheck === 1
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}
+                    >
+                        {icoStatusCheck === 0 && "✅ ICO is Active. Contributions are allowed."}
+                        {icoStatusCheck === 1 && "⏸️ ICO is Inactive. Contributions are paused."}
+                        {icoStatusCheck === 2 && "❌ ICO is Cancelled. Refunds available."}
+                    </span>
+                )}
             </div>
 
-            {/* ICO Status Description */}
-            <div className="bg-white rounded-3xl shadow-lg p-6 border-l-8 border-blue-400">
-                <h2 className="text-2xl font-bold text-gray-800 mb-3">ICO Status</h2>
-                <p className="text-lg text-blue-600 font-semibold mb-2">
-                    {icoStatus !== null ? STATUS_MAP[icoStatusCheck!] : "Loading..."}
-                </p>
-                <div className="text-sm text-gray-600 space-y-1 pl-1">
-                    <p><strong>✔ Active:</strong> Contributions accepted</p>
-                    <p><strong>⏸ Inactive:</strong> No contributions</p>
-                    <p><strong>❌ Cancelled:</strong> Refunds available</p>
-                </div>
-            </div>
 
             {/* ICO Info Panel */}
             <div className="bg-white rounded-3xl shadow-xl p-8 space-y-8 border border-gray-100">
-                <div>
-                    <label className="block text-lg font-medium text-gray-700 mb-2">
-                        Token Mint Address
-                    </label>
-                    <input
-                        type="text"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="Enter Token Mint Address"
-                        value={mintInput}
-                        onChange={(e) => setMintInput(e.target.value)}
-                    />
-                </div>
-
                 {icoState && (
                     <div className="bg-gray-100 p-6 rounded-xl space-y-6">
                         <h2 className="text-2xl font-bold text-gray-800">ICO State</h2>
@@ -364,7 +387,7 @@ const Activity = () => {
                 {/* Status Banner */}
                 {icoStatus && (
                     <div className={`p-4 rounded-xl font-semibold text-sm shadow transition duration-300
-                        ${icoStatus === "active" ? "bg-green-500 text-white" :
+                ${icoStatus === "active" ? "bg-green-500 text-white" :
                             icoStatus === "expired" ? "bg-red-500 text-white" :
                                 "bg-yellow-400 text-black"}`}>
                         {icoStatus === "active" && (
@@ -383,7 +406,7 @@ const Activity = () => {
                     </div>
                 )}
 
-                {/* Authority Withdraw */}
+                {/* Withdraw Button for Owner */}
                 {connected && icoState && icoState.authority.equals(publicKey!) && (
                     <button
                         className="w-full bg-gradient-to-r from-red-500 to-red-700 text-white py-3 rounded-xl shadow hover:opacity-90 transition"
@@ -394,34 +417,29 @@ const Activity = () => {
                     </button>
                 )}
 
-                {/* User Actions */}
-                {connected && (
-                    <div className="space-y-6">
-                        {/* Contribution Input */}
-                        <div>
-                            <label className="block text-base font-semibold text-gray-700 mb-2">
-                                Contribution Amount (SOL)
-                            </label>
-                            <input
-                                type="number"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                placeholder="Enter amount in SOL"
-                                value={contributionAmount}
-                                onChange={(e) => setContributionAmount(e.target.value)}
-                            />
-                        </div>
+                {/* Contribution Logic with Whitelist Enforcement */}
+                {connected && icoState && icoStatusCheck === 0 && icoState.totalContributed.toNumber() < icoState.hardCap.toNumber() && Date.now() / 1000 < icoState.endDate.toNumber() && (
+                    (whitelistStatus === false || (whitelistStatus === true && whitelistedAddresses.some(addr => addr.equals(publicKey!)))) ? (
+                        <div className="space-y-6 mt-6">
+                            {/* Contribution Input */}
+                            <div>
+                                <label className="block text-base font-semibold text-gray-700 mb-2">
+                                    Contribution Amount (SOL)
+                                </label>
+                                <input
+                                    type="number"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    placeholder="Enter amount in SOL"
+                                    value={contributionAmount}
+                                    onChange={(e) => setContributionAmount(e.target.value)}
+                                />
+                            </div>
 
-                        {/* Action Buttons */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {/* ✅ Contribute Button */}
-                            {(icoState && icoStatusCheck === 0 && icoState.totalContributed.toNumber() < icoState.hardCap.toNumber() && Date.now() / 1000 < icoState.endDate.toNumber()) && (
+                            {/* Contribute Button */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <button
                                     className="bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
                                     onClick={async () => {
-                                        if (!icoState || icoStatusCheck !== 0) {
-                                            toast.error("ICO is not active. Cannot contribute.");
-                                            return;
-                                        }
                                         if (!contributionAmount || parseFloat(contributionAmount) <= 0) {
                                             toast.error("Enter a valid contribution amount.");
                                             return;
@@ -432,46 +450,70 @@ const Activity = () => {
                                 >
                                     {loading ? 'Contributing...' : 'Contribute'}
                                 </button>
-                            )}
-
-                            {/* ✅ Claim Token Button */}
-                            {(icoState &&
-                                icoStatusCheck === 0 &&
-                                icoState.totalContributed >= icoState.softCap &&
-                                Date.now() / 1000 >= icoState.endDate.toNumber()) && (
-                                    <button
-                                        className="bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
-                                        onClick={async () => {
-                                            await handleClaim();
-                                        }}
-                                        disabled={loading}
-                                    >
-                                        {loading ? 'Claiming...' : 'Claim Tokens'}
-                                    </button>
-                                )}
-
-                            {/* ✅ Refund Button */}
-                            {(icoState && (
-                                icoStatusCheck === 2 || // Cancelled
-                                (Date.now() / 1000 >= icoState.endDate.toNumber() && icoState.totalContributed.toNumber() < icoState.softCap.toNumber())
-                            )) && (
-                                    <button
-                                        className="bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700 transition disabled:opacity-50"
-                                        onClick={async () => {
-                                            await handleRefund();
-                                        }}
-                                        disabled={loading}
-                                    >
-                                        {loading ? 'Refund in progress...' : 'Refund'}
-                                    </button>
-                                )}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="bg-yellow-100 text-yellow-800 p-4 mt-6 rounded-xl shadow text-center font-medium">
+                            Whitelisting is enabled. You are not whitelisted and cannot contribute.
+                        </div>
+                    )
                 )}
 
+                {/* Claim Button */}
+                {(icoState &&
+                    icoStatusCheck === 0 &&
+                    icoState.totalContributed.toNumber() >= icoState.softCap.toNumber() &&
+                    Date.now() / 1000 >= icoState.endDate.toNumber()) && (
+                        <button
+                            className="mt-6 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50 w-full"
+                            onClick={handleClaim}
+                            disabled={loading}
+                        >
+                            {loading ? 'Claiming...' : 'Claim Tokens'}
+                        </button>
+                    )}
+
+                {/* Refund Button */}
+                {(icoState && (
+                    icoStatusCheck === 2 || // Cancelled
+                    (Date.now() / 1000 >= icoState.endDate.toNumber() && icoState.totalContributed.toNumber() < icoState.softCap.toNumber())
+                )) && (
+                        <button
+                            className="mt-6 bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700 transition disabled:opacity-50 w-full"
+                            onClick={handleRefund}
+                            disabled={loading}
+                        >
+                            {loading ? 'Refund in progress...' : 'Refund'}
+                        </button>
+                    )}
             </div>
+
+            {/* Whitelisted Addresses Display (Visible to All) */}
+            { whitelistStatus && whitelistedAddresses.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-md p-6">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Whitelisted Addresses</h2>
+                    <ul className="text-sm bg-gray-100 p-3 rounded-lg max-h-60 overflow-y-auto space-y-2">
+                        {whitelistedAddresses.map((addr, idx) => (
+                            <li key={idx} className="text-gray-800 break-all bg-white p-2 rounded shadow-sm">
+                                {addr.toBase58()}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {/* Show WhiteList & IcoStatus only to owner */}
+            {connected && icoState && publicKey && icoState.authority.equals(publicKey) && (
+                <>
+                    <WhiteList
+                        refreshWhitelist={fetchWhitelistInfo}
+                    />
+                    <IcoStatus />
+                </>
+            )}
         </div>
     );
+
 
 
 

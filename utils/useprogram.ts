@@ -148,7 +148,6 @@ export const initializeICO = async ({
 };
 
 
-
 export const contributeToICO = async ({
   provider,
   tokenMint,
@@ -398,7 +397,7 @@ export const addToWhitelist = async ({
   tokenMint,
 }: {
   provider: AnchorProvider;
-  walletKey: PublicKey;
+  walletKey: PublicKey[];
   tokenMint: PublicKey;
 }) => {
   const program = getProgram(provider);
@@ -416,7 +415,7 @@ export const addToWhitelist = async ({
 
   try {
     const tx = await program.methods
-      .addToWhitelist(new PublicKey(walletKey))
+      .addToWhitelist(walletKey)
       .accounts({
         whiteList,
         icoState,
@@ -484,7 +483,7 @@ export const fetchWhitelistData = async (provider: AnchorProvider, tokenMint: Pu
       program.programId
   );
   const account = await program.account.whiteList.fetch(whitelistPDA);
-  console.log('Whitelist Account:', account.authority.toBase58());
+  // console.log('Whitelist Account:', account.authority.toBase58());
   return {
       enable: account.enable,
       authority: account.authority,
