@@ -30,10 +30,9 @@ interface IcoState {
     hardCap: BN;
 }
 
-// interface TokenInfo {
-//     symbol: string;
-//     decimals: number;
-// }
+interface IcoStatusProps {
+  refreshIcoStatus: () => Promise<void>;
+}
 
 enum IcoStatusChange {
     Active = 0,
@@ -41,9 +40,8 @@ enum IcoStatusChange {
     Cancelled = 2,
   }
 
-const IcoStatus = () => {
+const IcoStatus = ({ refreshIcoStatus }: IcoStatusProps) => {
     const [mintInput, setMintInput] = useState('');
-    // const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
     const { publicKey, wallet, connected, signTransaction, signAllTransactions } = useWallet();
     const [loading, setLoading] = useState(false);
     const [icoState, setIcoState] = useState<IcoState | null>(null);
@@ -146,6 +144,7 @@ const IcoStatus = () => {
             });
             toast.success("ICO State Updated Successfully! Transaction: " + tx);
             await fetchIcoState(); // Refresh latest state from blockchain
+            await refreshIcoStatus(); // Refresh latest state from server
         } catch (err) {
             toast.error('Error updating ICO state: ' + err);
         } finally {

@@ -142,23 +142,37 @@ const Activity = () => {
         if (IcoInfo) fetchWhitelistInfo();
     }, [IcoInfo, fetchWhitelistInfo]);
 
-    useEffect(() => {
-        const getchIcoStatusInfo = async () => {
-            if (!provider || !IcoInfo) return;
-            try {
-                const data = await fetchIcoStatusData(provider, IcoInfo);
-                setIcoStatusCheck(data.status);
-                console.log('ICO Status Data:', data);
-            } catch (err) {
-                console.error('Error fetching ICO status:', err);
-                // toast.error('ICO not initialized yet');
-            }
-        };
+    // useEffect(() => {
+    //     const getchIcoStatusInfo = async () => {
+    //         if (!provider || !IcoInfo) return;
+    //         try {
+    //             const data = await fetchIcoStatusData(provider, IcoInfo);
+    //             setIcoStatusCheck(data.status);
+    //             console.log('ICO Status Data:', data);
+    //         } catch (err) {
+    //             console.error('Error fetching ICO status:', err);
+    //             // toast.error('ICO not initialized yet');
+    //         }
+    //     };
 
-        getchIcoStatusInfo();
+    //     getchIcoStatusInfo();
+    // }, [provider, IcoInfo]);
+
+    const getchIcoStatusInfo = useCallback(async () => {
+        if (!provider || !IcoInfo) return;
+        try {
+            const data = await fetchIcoStatusData(provider, IcoInfo);
+            setIcoStatusCheck(data.status);
+            console.log('ICO Status Data:', data);
+        } catch (err) {
+            console.error('Error fetching ICO status:', err);
+            // toast.error('ICO not initialized yet');
+        }
     }, [provider, IcoInfo]);
 
-
+    useEffect(() => {
+        if (IcoInfo) getchIcoStatusInfo();
+    }, [IcoInfo, getchIcoStatusInfo]);
 
 
     useEffect(() => {
@@ -323,7 +337,6 @@ const Activity = () => {
 
         return `${days > 0 ? `${days}d ` : ''}${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${seconds}s`;
     })();
-
 
     return (
         <div className="max-w-5xl mx-auto px-6 py-10 space-y-10 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
@@ -508,7 +521,9 @@ const Activity = () => {
                     <WhiteList
                         refreshWhitelist={fetchWhitelistInfo}
                     />
-                    <IcoStatus />
+                    <IcoStatus
+                        refreshIcoStatus={getchIcoStatusInfo}
+                     />
                 </>
             )}
         </div>
