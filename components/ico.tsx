@@ -159,7 +159,7 @@ const ICO = () => {
       await fetchIcoState();
 
       // Redirect after success
-    router.push(`/actions?mint=${mintInput}`);
+      router.push(`/actions?mint=${mintInput}`);
     } catch (err) {
       toast.error('err' + err);
       console.error('Error initializing ICO:', err);
@@ -241,279 +241,290 @@ const ICO = () => {
     return `${days > 0 ? `${days}d ` : ''}${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m ` : ''}${seconds}s`;
   })();
   return (
-    <><div className="max-w-4xl mx-auto p-6 space-y-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
-      <ToastContainer position="top-right" />
+    <>
+      <div className="max-w-4xl mx-auto p-8 space-y-8 bg-gradient-to-br from-purple-50 to-purple-100 min-h-screen">
+        <ToastContainer position="top-right" />
 
-      {/* Header Section */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-          ICO Initialize
-        </h1>
-        {/* <WalletMultiButton /> */}
-      </div>
+        {/* Header Section */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-4xl font-bold text-purple-900 tracking-tight">
+            ICO Details
+          </h1>
+          {/* <WalletMultiButton /> */}
+        </div>
 
-      {/* Main Card */}
-      <div className="bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 hover:shadow-2xl">
-        <div className="space-y-6">
-          {/* Token Mint and Price Inputs */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Token Mint Address
-              </label>
-              <input
-                type="text"
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50 text-gray-900 placeholder-gray-400"
-                placeholder="Enter Token Mint Address"
-                value={mintInput}
-                onChange={(e) => setMintInput(e.target.value)} />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Token Price (SOL)
-              </label>
-              <input
-                type="text"
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50 text-gray-900 placeholder-gray-400"
-                placeholder="Enter Token Price in SOL"
-                value={tokenPrice}
-                onChange={(e) => setTokenPrice(e.target.value)} />
-            </div>
-          </div>
-
-          {connected && (
-            <>
-              {/* Start and End Date Inputs */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Start Date
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50 text-gray-900"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    End Date
-                  </label>
-                  <input
-                    type="datetime-local"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50 text-gray-900"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)} />
-                </div>
-              </div>
-
-              {/* Soft and Hard Cap Inputs */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Soft Cap (SOL)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50 text-gray-900 placeholder-gray-400"
-                    placeholder="Enter soft cap in SOL"
-                    value={softCap}
-                    onChange={(e) => setsoftCap(e.target.value)} />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Hard Cap (SOL)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-gray-50 text-gray-900 placeholder-gray-400"
-                    placeholder="Enter hard cap in SOL"
-                    value={hardCap}
-                    onChange={(e) => sethardCap(e.target.value)} />
-                </div>
-              </div>
-
-              {/* Initialize ICO Button */}
-              <button
-                className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-indigo-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
-                onClick={handleInitializeICO}
-                disabled={loading || !mintInput || !startDate || !endDate || !softCap}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg
-                      className="animate-spin h-5 w-5 text-white"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4" />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Initializing...
-                  </span>
-                ) : (
-                  "Initialize ICO"
-                )}
-              </button>
-            </>
-          )}
-
-          {/* ICO State Section */}
-          {icoState && (
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                ICO State
-              </h2>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-gray-600">Authority</p>
-                  <p className="font-medium text-gray-900 font-mono">
-                    {truncateAddress(icoState.authority.toBase58())}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Total Contributed</p>
-                  <p className="font-medium text-gray-900">
-                    {lamportsToSol(icoState.totalContributed)} SOL
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Price Per Token</p>
-                  <p className="font-medium text-gray-900">
-                    {lamportsToSol(icoState.tokenPrice)} SOL
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Token Mint</p>
-                  <p className="font-medium text-gray-900 font-mono">
-                    {truncateAddress(icoState.tokenMint.toBase58())}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Vault</p>
-                  <p className="font-medium text-gray-900 font-mono">
-                    {truncateAddress(icoState.vault.toBase58())}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Start Date</p>
-                  <p className="font-medium text-gray-900">
-                    {new Date(icoState.startDate.toNumber() * 1000).toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">End Date</p>
-                  <p className="font-medium text-gray-900">
-                    {new Date(icoState.endDate.toNumber() * 1000).toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Token Amount</p>
-                  <p className="font-medium text-gray-900">
-                    {tokenInfo
-                      ? formatTokenAmount(icoState.tokenAmount, tokenInfo.decimals)
-                      : icoState.tokenAmount.toString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Soft Cap</p>
-                  <p className="font-medium text-gray-900">
-                    {lamportsToSol(icoState.softCap)} SOL
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Hard Cap</p>
-                  <p className="font-medium text-gray-900">
-                    {lamportsToSol(icoState.hardCap)} SOL
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ICO Status Display */}
-          {icoStatus && (
-            <div
-              className={`p-5 rounded-xl text-sm font-medium flex items-center gap-3 transition-all duration-300
-                    ${icoStatus === "active"
-                  ? "bg-green-100 text-green-800 border-l-4 border-green-500"
-                  : icoStatus === "expired"
-                    ? "bg-red-100 text-red-800 border-l-4 border-red-500"
-                    : "bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500"}`}
-            >
-              <div className="text-2xl">
-                {icoStatus === "active" && "🚀"}
-                {icoStatus === "expired" && "⏱️"}
-                {icoStatus === "upcoming" && "⏳"}
+        {/* Main Card */}
+        <div className="bg-white rounded-2xl shadow-2xl p-8 transition-all duration-300 hover:shadow-3xl">
+          <div className="space-y-8">
+            {/* Token Mint and Price Inputs */}
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-purple-700 mb-2">
+                  Token Mint Address
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-purple-50 text-purple-900 placeholder-purple-400"
+                  placeholder="Enter Token Mint Address"
+                  value={mintInput}
+                  onChange={(e) => setMintInput(e.target.value)}
+                />
               </div>
               <div>
-                {icoStatus === "active" && (
-                  <div>
-                    <span className="font-bold">ICO is Active!</span>
-                    <br />
-                    🕒 Ends in: <span className="font-mono">{endsIn || "Unknown"}</span>
-                  </div>
-                )}
-                {icoStatus === "expired" && (
-                  <span className="font-bold">ICO has Expired</span>
-                )}
-                {icoStatus === "upcoming" && (
-                  <div>
-                    <span className="font-bold">ICO is Upcoming!</span>
-                    <br />
-                    🕒 Starts in: <span className="font-mono">{timeLeft || "Unknown"}</span>
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-purple-700 mb-2">
+                  Token Price (SOL)
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-purple-50 text-purple-900 placeholder-purple-400"
+                  placeholder="Enter Token Price in SOL"
+                  value={tokenPrice}
+                  onChange={(e) => setTokenPrice(e.target.value)}
+                />
               </div>
             </div>
-          )}
 
-          {/* Admin Controls */}
-          {connected && icoState && icoState.authority.equals(publicKey!) && (
-            <div className="space-y-6">
-              {/* Withdraw SOL Button */}
-              <button
-                className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-red-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
-                onClick={handleWithdrawSol}
-                disabled={loading}
+            {connected && (
+              <>
+                {/* Start and End Date Inputs */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-2">
+                      Start Date
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-purple-50 text-purple-900"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-2">
+                      End Date
+                    </label>
+                    <input
+                      type="datetime-local"
+                      className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-purple-50 text-purple-900"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Soft and Hard Cap Inputs */}
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-2">
+                      Soft Cap (SOL)
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-purple-50 text-purple-900 placeholder-purple-400"
+                      placeholder="Enter soft cap in SOL"
+                      value={softCap}
+                      onChange={(e) => setsoftCap(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-purple-700 mb-2">
+                      Hard Cap (SOL)
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-purple-50 text-purple-900 placeholder-purple-400"
+                      placeholder="Enter hard cap in SOL"
+                      value={hardCap}
+                      onChange={(e) => sethardCap(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Initialize ICO Button */}
+                <button
+                  className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                  onClick={handleInitializeICO}
+                  disabled={loading || !mintInput || !startDate || !endDate || !softCap}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Initializing...
+                    </span>
+                  ) : (
+                    "Initialize ICO"
+                  )}
+                </button>
+              </>
+            )}
+
+            {/* ICO Details Section */}
+            {icoState && (
+              <div className="bg-purple-50 p-6 rounded-xl border border-purple-200">
+                <h2 className="text-xl font-semibold text-purple-900 mb-4">
+                  ICO Details
+                </h2>
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm text-purple-600">Authority</p>
+                    <p className="font-medium text-purple-900 font-mono">
+                      {truncateAddress(icoState.authority.toBase58())}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-600">Total Contributed</p>
+                    <p className="font-medium text-purple-900">
+                      {lamportsToSol(icoState.totalContributed)} SOL
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-600">Price Per Token</p>
+                    <p className="font-medium text-purple-900">
+                      {lamportsToSol(icoState.tokenPrice)} SOL
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-600">Token Mint</p>
+                    <p className="font-medium text-purple-900 font-mono">
+                      {truncateAddress(icoState.tokenMint.toBase58())}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-600">Vault</p>
+                    <p className="font-medium text-purple-900 font-mono">
+                      {truncateAddress(icoState.vault.toBase58())}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-600">Start Date</p>
+                    <p className="font-medium text-purple-900">
+                      {new Date(icoState.startDate.toNumber() * 1000).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-600">End Date</p>
+                    <p className="font-medium text-purple-900">
+                      {new Date(icoState.endDate.toNumber() * 1000).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-600">Token Amount</p>
+                    <p className="font-medium text-purple-900">
+                      {tokenInfo
+                        ? formatTokenAmount(icoState.tokenAmount, tokenInfo.decimals)
+                        : icoState.tokenAmount.toString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-600">Soft Cap</p>
+                    <p className="font-medium text-purple-900">
+                      {lamportsToSol(icoState.softCap)} SOL
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-purple-600">Hard Cap</p>
+                    <p className="font-medium text-purple-900">
+                      {lamportsToSol(icoState.hardCap)} SOL
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ICO Status Display */}
+            {icoStatus && (
+              <div
+                className={`p-6 rounded-xl text-sm font-medium flex items-center gap-4 transition-all duration-300
+                                ${icoStatus === "active"
+                    ? "bg-green-100 text-green-800 border-l-4 border-green-600"
+                    : icoStatus === "expired"
+                      ? "bg-red-100 text-red-800 border-l-4 border-red-600"
+                      : "bg-yellow-100 text-yellow-800 border-l-4 border-yellow-600"}`}
               >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg
-                      className="animate-spin h-5 w-5 text-white"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4" />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Withdrawing...
-                  </span>
-                ) : (
-                  "Withdraw SOL"
-                )}
-              </button>              
-            </div>
-          )}
+                <div className="text-2xl">
+                  {icoStatus === "active" && "🚀"}
+                  {icoStatus === "expired" && "⏱️"}
+                  {icoStatus === "upcoming" && "⏳"}
+                </div>
+                <div>
+                  {icoStatus === "active" && (
+                    <div>
+                      <span className="font-bold">ICO is Active!</span>
+                      <br />
+                      🕒 Ends in: <span className="font-mono">{endsIn || "Unknown"}</span>
+                    </div>
+                  )}
+                  {icoStatus === "expired" && (
+                    <span className="font-bold">ICO has Expired</span>
+                  )}
+                  {icoStatus === "upcoming" && (
+                    <div>
+                      <span className="font-bold">ICO is Upcoming!</span>
+                      <br />
+                      🕒 Starts in: <span className="font-mono">{timeLeft || "Unknown"}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Admin Controls */}
+            {connected && icoState && icoState.authority.equals(publicKey!) && (
+              <div className="space-y-6">
+                {/* Withdraw SOL Button */}
+                <button
+                  className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                  onClick={handleWithdrawSol}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Withdrawing...
+                    </span>
+                  ) : (
+                    "Withdraw SOL"
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 };

@@ -339,182 +339,281 @@ const Activity = () => {
     })();
 
     return (
-        <div className="max-w-5xl mx-auto px-6 py-10 space-y-10 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+        <div className="max-w-5xl mx-auto px-6 py-8 space-y-6 bg-gradient-to-br from-purple-50 to-purple-100 min-h-screen">
             <ToastContainer position="top-right" />
-
+    
+            {/* ICO Details Section - Prominent and Professional */}
+            {icoState && (
+                <div className="bg-white rounded-3xl shadow-2xl p-8 border border-purple-100">
+                    <h2 className="text-2xl font-semibold text-purple-900 mb-6">ICO Details</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <ICOField label="Authority" value={truncateAddress(icoState.authority.toBase58())} />
+                        <ICOField label="Total Contributed" value={`${lamportsToSol(icoState.totalContributed)} SOL`} />
+                        <ICOField label="Price Per Token" value={`${lamportsToSol(icoState.tokenPrice)} SOL`} />
+                        <ICOField label="Token Mint" value={truncateAddress(icoState.tokenMint.toBase58())} />
+                        <ICOField label="Vault" value={truncateAddress(icoState.vault.toBase58())} />
+                        <ICOField label="Start Date" value={new Date(icoState.startDate.toNumber() * 1000).toLocaleString()} />
+                        <ICOField label="End Date" value={new Date(icoState.endDate.toNumber() * 1000).toLocaleString()} />
+                        <ICOField label="Token Amount" value={tokenInfo ? formatTokenAmount(icoState.tokenAmount, tokenInfo.decimals) : icoState.tokenAmount.toString()} />
+                        <ICOField label="Soft Cap" value={`${lamportsToSol(icoState.softCap)} SOL`} />
+                        <ICOField label="Hard Cap" value={`${lamportsToSol(icoState.hardCap)} SOL`} />
+                    </div>
+                </div>
+            )}
+    
+            {/* Notification-Style Status Section */}
             <div className="flex flex-wrap items-center gap-4">
-                {/* Whitelist Status Badge */}
-                <span
-                    className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${whitelistStatus === null
-                        ? 'bg-gray-300 text-gray-700'
+                {/* Whitelist Status Notification */}
+                <div
+                    className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-300 ${whitelistStatus === null
+                        ? 'bg-purple-100 text-purple-800 border-l-4 border-purple-500'
                         : whitelistStatus
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
+                            ? 'bg-green-100 text-green-800 border-l-4 border-green-500'
+                            : 'bg-red-100 text-red-800 border-l-4 border-red-500'
                         }`}
                 >
-                    {whitelistStatus === null
-                        ? 'Whitelist: Not loaded'
-                        : whitelistStatus
-                            ? 'Whitelist: ENABLED'
-                            : 'Whitelist: DISABLED'}
-                </span>
-
-                {/* ICO Status Badge */}
+                    <span>
+                        {whitelistStatus === null
+                            ? 'Whitelist: Not Loaded'
+                            : whitelistStatus
+                                ? '✅ Whitelist Enabled'
+                                : '❌ Whitelist Disabled'}
+                    </span>
+                </div>
+    
+                {/* ICO Status Notification */}
                 {icoStatusCheck !== null && (
-                    <span
-                        className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${icoStatusCheck === 0
-                            ? 'bg-green-100 text-green-700'
+                    <div
+                        className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium shadow-md transition-all duration-300 ${icoStatusCheck === 0
+                            ? 'bg-green-100 text-green-800 border-l-4 border-green-500'
                             : icoStatusCheck === 1
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-red-100 text-red-700'
+                                ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500'
+                                : 'bg-red-100 text-red-800 border-l-4 border-red-500'
                             }`}
                     >
-                        {icoStatusCheck === 0 && "✅ ICO is Active. Contributions are allowed."}
-                        {icoStatusCheck === 1 && "⏸️ ICO is Inactive. Contributions are paused."}
-                        {icoStatusCheck === 2 && "❌ ICO is Cancelled. Refunds available."}
-                    </span>
+                        <span>
+                            {icoStatusCheck === 0 && "✅ ICO Active, Contribution availabe"}
+                            {icoStatusCheck === 1 && "⏸️ ICO Paused, Contribution not available"}
+                            {icoStatusCheck === 2 && "❌ ICO Cancelled, Refund available"}
+                        </span>
+                    </div>
                 )}
             </div>
-
-
-            {/* ICO Info Panel */}
-            <div className="bg-white rounded-3xl shadow-xl p-8 space-y-8 border border-gray-100">
-                {icoState && (
-                    <div className="bg-gray-100 p-6 rounded-xl space-y-6">
-                        <h2 className="text-2xl font-bold text-gray-800">ICO State</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <ICOField label="Authority" value={truncateAddress(icoState.authority.toBase58())} />
-                            <ICOField label="Total Contributed" value={`${lamportsToSol(icoState.totalContributed)} SOL`} />
-                            <ICOField label="Price Per Token" value={`${lamportsToSol(icoState.tokenPrice)} SOL`} />
-                            <ICOField label="Token Mint" value={truncateAddress(icoState.tokenMint.toBase58())} />
-                            <ICOField label="Vault" value={truncateAddress(icoState.vault.toBase58())} />
-                            <ICOField label="Start Date" value={new Date(icoState.startDate.toNumber() * 1000).toLocaleString()} />
-                            <ICOField label="End Date" value={new Date(icoState.endDate.toNumber() * 1000).toLocaleString()} />
-                            <ICOField label="Token Amount" value={tokenInfo ? formatTokenAmount(icoState.tokenAmount, tokenInfo.decimals) : icoState.tokenAmount.toString()} />
-                            <ICOField label="Soft Cap" value={`${lamportsToSol(icoState.softCap)} SOL`} />
-                            <ICOField label="Hard Cap" value={`${lamportsToSol(icoState.hardCap)} SOL`} />
+    
+            {/* Status Banner */}
+            {icoStatus && (
+                <div className={`p-4 rounded-xl font-medium text-sm shadow-lg transition-all duration-300
+                    ${icoStatus === "active" ? "bg-green-500 text-white" :
+                        icoStatus === "expired" ? "bg-red-500 text-white" :
+                            "bg-yellow-500 text-black"}`}>
+                    {icoStatus === "active" && (
+                        <div>
+                            🚀 ICO Active<br />
+                            ⏳ Ends: <span className="font-mono">{endsIn || "Unknown"}</span>
                         </div>
-                    </div>
-                )}
-
-                {/* Status Banner */}
-                {icoStatus && (
-                    <div className={`p-4 rounded-xl font-semibold text-sm shadow transition duration-300
-                ${icoStatus === "active" ? "bg-green-500 text-white" :
-                            icoStatus === "expired" ? "bg-red-500 text-white" :
-                                "bg-yellow-400 text-black"}`}>
-                        {icoStatus === "active" && (
-                            <div>
-                                🚀 ICO is Active!<br />
-                                ⏳ Ends in: {endsIn || "Unknown"}
-                            </div>
-                        )}
-                        {icoStatus === "expired" && "⏱️ ICO has Expired"}
-                        {icoStatus === "upcoming" && (
-                            <div>
-                                🕓 ICO is Upcoming<br />
-                                🕒 Starts in: {timeLeft || "Unknown"}
-                            </div>
-                        )}
-                    </div>
-                )}
-
+                    )}
+                    {icoStatus === "expired" && "⏱️ ICO Expired"}
+                    {icoStatus === "upcoming" && (
+                        <div>
+                            🕓 ICO Upcoming<br />
+                            🕒 Starts: <span className="font-mono">{timeLeft || "Unknown"}</span>
+                        </div>
+                    )}
+                </div>
+            )}
+    
+            {/* Action Panel */}
+            <div className="bg-white rounded-3xl shadow-2xl p-8 space-y-6 border border-purple-100">
                 {/* Withdraw Button for Owner */}
                 {connected && icoState && icoState.authority.equals(publicKey!) && (
                     <button
-                        className="w-full bg-gradient-to-r from-red-500 to-red-700 text-white py-3 rounded-xl shadow hover:opacity-90 transition"
+                        className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-3 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleWithdrawSol}
                         disabled={loading}
                     >
-                        {loading ? 'Withdrawing...' : 'Withdraw SOL'}
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <svg
+                                    className="animate-spin h-5 w-5 text-white"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    />
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    />
+                                </svg>
+                                Withdrawing...
+                            </span>
+                        ) : (
+                            "Withdraw SOL"
+                        )}
                     </button>
                 )}
-
+    
                 {/* Contribution Logic with Whitelist Enforcement */}
                 {connected && icoState && icoStatusCheck === 0 && icoState.totalContributed.toNumber() < icoState.hardCap.toNumber() && Date.now() / 1000 < icoState.endDate.toNumber() && (
                     (whitelistStatus === false || (whitelistStatus === true && whitelistedAddresses.some(addr => addr.equals(publicKey!)))) ? (
-                        <div className="space-y-6 mt-6">
+                        <div className="space-y-6">
                             {/* Contribution Input */}
                             <div>
-                                <label className="block text-base font-semibold text-gray-700 mb-2">
+                                <label className="block text-sm font-semibold text-purple-700 mb-2">
                                     Contribution Amount (SOL)
                                 </label>
                                 <input
                                     type="number"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    className="w-full px-4 py-3 border border-purple-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-purple-50 text-purple-900 placeholder-purple-400"
                                     placeholder="Enter amount in SOL"
                                     value={contributionAmount}
                                     onChange={(e) => setContributionAmount(e.target.value)}
                                 />
                             </div>
-
+    
                             {/* Contribute Button */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <button
-                                    className="bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition disabled:opacity-50"
-                                    onClick={async () => {
-                                        if (!contributionAmount || parseFloat(contributionAmount) <= 0) {
-                                            toast.error("Enter a valid contribution amount.");
-                                            return;
-                                        }
-                                        await handleContribute();
-                                    }}
-                                    disabled={loading || !contributionAmount}
-                                >
-                                    {loading ? 'Contributing...' : 'Contribute'}
-                                </button>
-                            </div>
+                            <button
+                                className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                onClick={async () => {
+                                    if (!contributionAmount || parseFloat(contributionAmount) <= 0) {
+                                        toast.error("Enter a valid contribution amount.");
+                                        return;
+                                    }
+                                    await handleContribute();
+                                }}
+                                disabled={loading || !contributionAmount}
+                            >
+                                {loading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <svg
+                                            className="animate-spin h-5 w-5 text-white"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            />
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                            />
+                                        </svg>
+                                        Contributing...
+                                    </span>
+                                ) : (
+                                    "Contribute"
+                                )}
+                            </button>
                         </div>
                     ) : (
-                        <div className="bg-yellow-100 text-yellow-800 p-4 mt-6 rounded-xl shadow text-center font-medium">
+                        <div className="bg-yellow-100 text-yellow-800 p-4 rounded-xl shadow-lg text-center font-medium">
                             Whitelisting is enabled. You are not whitelisted and cannot contribute.
                         </div>
                     )
                 )}
-
+    
                 {/* Claim Button */}
                 {(icoState &&
                     icoStatusCheck === 0 &&
                     icoState.totalContributed.toNumber() >= icoState.softCap.toNumber() &&
                     Date.now() / 1000 >= icoState.endDate.toNumber()) && (
                         <button
-                            className="mt-6 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition disabled:opacity-50 w-full"
+                            className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={handleClaim}
                             disabled={loading}
                         >
-                            {loading ? 'Claiming...' : 'Claim Tokens'}
+                            {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <svg
+                                        className="animate-spin h-5 w-5 text-white"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        />
+                                    </svg>
+                                    Claiming...
+                                </span>
+                            ) : (
+                                "Claim Tokens"
+                            )}
                         </button>
                     )}
-
+    
                 {/* Refund Button */}
                 {(icoState && (
                     icoStatusCheck === 2 || // Cancelled
                     (Date.now() / 1000 >= icoState.endDate.toNumber() && icoState.totalContributed.toNumber() < icoState.softCap.toNumber())
                 )) && (
                         <button
-                            className="mt-6 bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700 transition disabled:opacity-50 w-full"
+                            className="w-full bg-yellow-600 text-white py-3 rounded-lg font-semibold hover:bg-yellow-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                             onClick={handleRefund}
                             disabled={loading}
                         >
-                            {loading ? 'Refund in progress...' : 'Refund'}
+                            {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <svg
+                                        className="animate-spin h-5 w-5 text-white"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        />
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        />
+                                    </svg>
+                                    Refunding...
+                                </span>
+                            ) : (
+                                "Refund"
+                            )}
                         </button>
                     )}
             </div>
-
+    
             {/* Whitelisted Addresses Display (Visible to All) */}
-            { whitelistStatus && whitelistedAddresses.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-md p-6">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Whitelisted Addresses</h2>
-                    <ul className="text-sm bg-gray-100 p-3 rounded-lg max-h-60 overflow-y-auto space-y-2">
+            {whitelistStatus && whitelistedAddresses.length > 0 && (
+                <div className="bg-white rounded-2xl shadow-lg p-6">
+                    <h2 className="text-lg font-semibold text-purple-900 mb-4">Whitelisted Addresses</h2>
+                    <ul className="text-sm bg-purple-50 p-4 rounded-lg max-h-60 overflow-y-auto space-y-2">
                         {whitelistedAddresses.map((addr, idx) => (
-                            <li key={idx} className="text-gray-800 break-all bg-white p-2 rounded shadow-sm">
+                            <li key={idx} className="text-purple-800 break-all bg-white p-3 rounded shadow-sm">
                                 {addr.toBase58()}
                             </li>
                         ))}
                     </ul>
                 </div>
             )}
-
+    
             {/* Show WhiteList & IcoStatus only to owner */}
             {connected && icoState && publicKey && icoState.authority.equals(publicKey) && (
                 <>
@@ -523,7 +622,7 @@ const Activity = () => {
                     />
                     <IcoStatus
                         refreshIcoStatus={getchIcoStatusInfo}
-                     />
+                    />
                 </>
             )}
         </div>

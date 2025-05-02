@@ -228,6 +228,7 @@ export const claimTokens = async ({
     provider.wallet.publicKey
   );
 
+
   console.log('User token account:', userTokenAccount.toBase58());
 
   const vaultTokenAccount = await getAssociatedTokenAddress(
@@ -237,27 +238,58 @@ export const claimTokens = async ({
   );
   console.log('Vault token account:', vaultTokenAccount.toBase58());
 
-  try {
-    const tx = await program.methods
-      .claimTokens()
-      .accounts({
-        user: provider.wallet.publicKey,
-        icoState,
-        contribution,
-        vaultTokenAccount,
-        userTokenAccount,
-        tokenMint,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc();
+  // ✅ Check if user's token account exists
+  const accountInfo = await provider.connection.getAccountInfo(userTokenAccount);
+  const transaction = new Transaction();
 
-    return tx;
+  if (!accountInfo) {
+    console.log('User token account not found, creating...');
+    const createATAIx = createAssociatedTokenAccountInstruction(
+      provider.wallet.publicKey, // payer
+      userTokenAccount,          // ATA to create
+      provider.wallet.publicKey, // token account owner
+      tokenMint                  // mint
+    );
+    transaction.add(createATAIx);
+  }
+
+  const contributionAccount = await program.account.contribution.fetchNullable(contribution);
+  if (!contributionAccount) {
+    throw new Error("Contribution not found. Make sure you've contributed before claiming.");
+  }
+
+  // ✅ Add claimTokens instruction
+  const claimIx = await program.methods
+    .claimTokens()
+    .accounts({
+      user: provider.wallet.publicKey,
+      icoState,
+      contribution,
+      vaultTokenAccount,
+      userTokenAccount,
+      tokenMint,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .instruction();
+
+  transaction.add(claimIx);
+
+  try {
+    const txSig = await provider.sendAndConfirm(transaction);
+    return txSig;
   } catch (error: any) {
-    console.error('Error claiming tokens:', error);
-    if (error.logs) {
-      console.error('Transaction logs:', error.logs);
+    const logs: string[] = error?.logs || error?.error?.logs || [];
+
+    const nothingToClaim = logs.some((log) =>
+      log.includes('Error Code: NothingToClaim') || log.includes('Nothing to claim.')
+    );
+
+    if (nothingToClaim) {
+      throw new Error('You have already claimed your tokens.');
     }
+
+    console.error('Error claiming tokens:', error);
     throw error;
   }
 }
@@ -295,14 +327,14 @@ export const withdrawSol = async ({
   }
 };
 
-export const refund = async({
+export const refund = async ({
   provider,
   tokenMint,
-  }:
-{
-  provider: AnchorProvider;
-  tokenMint: PublicKey;
-}) => {
+}:
+  {
+    provider: AnchorProvider;
+    tokenMint: PublicKey;
+  }) => {
   const program = getProgram(provider);
 
   const [icoState] = PublicKey.findProgramAddressSync(
@@ -479,15 +511,15 @@ export const toggleWhitelist = async ({
 export const fetchWhitelistData = async (provider: AnchorProvider, tokenMint: PublicKey) => {
   const program = getProgram(provider);
   const [whitelistPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("white_list"), tokenMint.toBuffer()],
-      program.programId
+    [Buffer.from("white_list"), tokenMint.toBuffer()],
+    program.programId
   );
   const account = await program.account.whiteList.fetch(whitelistPDA);
   // console.log('Whitelist Account:', account.authority.toBase58());
   return {
-      enable: account.enable,
-      authority: account.authority,
-      addresses: account.whitelistedAddresses,
+    enable: account.enable,
+    authority: account.authority,
+    addresses: account.whitelistedAddresses,
   };
 };
 
@@ -495,14 +527,14 @@ export const fetchWhitelistData = async (provider: AnchorProvider, tokenMint: Pu
 export const fetchIcoStatusData = async (provider: AnchorProvider, tokenMint: PublicKey) => {
   const program = getProgram(provider);
   const [icoStatusPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("ico-status"), tokenMint.toBuffer(), Buffer.from('v2')],
-      program.programId
+    [Buffer.from("ico-status"), tokenMint.toBuffer(), Buffer.from('v2')],
+    program.programId
   );
   const account = await program.account.icoStatusAccount.fetch(icoStatusPDA);
   console.log('ICO Status Account:', account.authority.toBase58());
   return {
-      authority: account.authority,
-      status: account.status,
+    authority: account.authority,
+    status: account.status,
   };
 };
 
@@ -569,5 +601,5 @@ export const getIcoStatePDA = (tokenMint: PublicKey) => {
     PROGRAM_ID
   )[0];
 
-  
+
 };

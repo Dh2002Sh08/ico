@@ -179,17 +179,17 @@ export const IcoSummaryDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-indigo-50 to-gray-100 min-h-screen">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight mb-4 sm:mb-0">
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-purple-300 to-purple-300 min-h-screen">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+        <h1 className="text-3xl sm:text-4xl font-bold text-purple-900 tracking-tight mb-4 sm:mb-0">
           ICO Summary Dashboard
         </h1>
       </div>
-  
+
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="flex items-center gap-3 text-gray-600 text-lg font-semibold">
-            <svg className="animate-spin h-6 w-6 text-indigo-600" viewBox="0 0 24 24">
+          <div className="flex items-center gap-4 text-white text-lg font-semibold">
+            <svg className="animate-spin h-8 w-8 text-purple-400" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path
                 className="opacity-75"
@@ -201,53 +201,53 @@ export const IcoSummaryDashboard = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-purple-100">
           <div className="overflow-x-auto">
             <table className="min-w-full table-auto">
-              <thead className="bg-indigo-50">
-                <tr className="border-b border-indigo-200">
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Token Name</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Token Mint</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Start Date</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">End Date</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Price (SOL)</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Total Supply</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-gray-800">Status</th>
+              <thead className="bg-gradient-to-r from-purple-100 to-purple-200">
+                <tr className="border-b border-purple-300">
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-purple-900">Token Name</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-purple-900">Token Mint</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-purple-900 hidden sm:table-cell">Start Date</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-purple-900 hidden md:table-cell">End Date</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-purple-900">Price (SOL)</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-purple-900 hidden lg:table-cell">Total Supply</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-sm font-semibold text-purple-900">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {icos.map((ico, index) => (
                   <tr
                     key={index}
-                    className="border-b border-gray-100 hover:bg-indigo-50 transition-all duration-200"
+                    className="border-b border-purple-100 hover:bg-purple-50 transition-all duration-300"
                   >
-                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-sm">
+                    <td className="px-4 py-4 sm:px-6 sm:py-5 text-sm">
                       <Link href={`/actions?mint=${ico.tokenMint}`}>
                         <button
-                          className="text-indigo-600 hover:text-indigo-800 font-medium cursor-pointer"
+                          className="text-purple-600 hover:text-purple-800 font-medium cursor-pointer transition-colors duration-200"
                           title="Click to contribute"
                         >
                           {ico.tokenName}
                         </button>
                       </Link>
                     </td>
-                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-900 font-mono text-sm truncate max-w-[150px] sm:max-w-none">
+                    <td className="px-4 py-4 sm:px-6 sm:py-5 text-purple-900 font-mono text-sm truncate max-w-[120px] sm:max-w-[200px]">
                       <a
                         href={`https://explorer.solana.com/address/${ico.tokenMint}?cluster=devnet`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
+                        className="text-purple-600 hover:text-purple-800 transition-colors duration-200"
                       >
                         {ico.tokenMint}
                       </a>
                     </td>
-                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.startDate}</td>
-                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.endDate}</td>
-                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.price}</td>
-                    <td className="px-4 py-3 sm:px-6 sm:py-4 text-gray-600 text-sm">{ico.totalSupply}</td>
-                    <td className="px-4 py-3 sm:px-6 sm:py-4">
+                    <td className="px-4 py-4 sm:px-6 sm:py-5 text-gray-600 text-sm hidden sm:table-cell">{ico.startDate}</td>
+                    <td className="px-4 py-4 sm:px-6 sm:py-5 text-gray-600 text-sm hidden md:table-cell">{ico.endDate}</td>
+                    <td className="px-4 py-4 sm:px-6 sm:py-5 text-gray-600 text-sm">{ico.price}</td>
+                    <td className="px-4 py-4 sm:px-6 sm:py-5 text-gray-600 text-sm hidden lg:table-cell">{ico.totalSupply}</td>
+                    <td className="px-4 py-4 sm:px-6 sm:py-5">
                       <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-all duration-200
+                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300
                           ${
                             ico.status === 'active'
                               ? 'bg-green-100 text-green-800'
@@ -257,7 +257,7 @@ export const IcoSummaryDashboard = () => {
                           }`}
                       >
                         <span
-                          className={`w-2 h-2 rounded-full mr-2
+                          className={`w-2.5 h-2.5 rounded-full mr-2
                             ${
                               ico.status === 'active'
                                 ? 'bg-green-500'
@@ -277,6 +277,6 @@ export const IcoSummaryDashboard = () => {
         </div>
       )}
     </div>
-  );
+);
   
 };
